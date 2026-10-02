@@ -164,7 +164,7 @@ deploy_core_dotfiles() {
 
     # Lock down permissions
     chmod 700 "${config_dir}"
-    chown -R "${USER}:${USER}" "${config_dir}" "${HOME}/Pictures"
+    sudo chown -R "${USER}:${USER}" "${config_dir}" "${HOME}/Pictures"
 
     log_success "Wayfire configuration hierarchy deployed successfully."
 }

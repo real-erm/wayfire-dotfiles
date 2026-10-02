@@ -40,48 +40,93 @@ configure_repositories() {
     march=$(detect_microarch)
     log_info "Detected CPU Microarchitecture Level: x86-64-${march}"
 
-    # 1. Synchronize package databases prior to invoking paru for keyrings
-    log_info "Synchronizing pacman package databases before installing keyrings..."
+    # 1. Synchronize package databases before any AUR operations
+    log_info "Synchronizing pacman package databases..."
     sudo pacman -Sy
 
-    # 2. Build and install official ALHP keyring packages if microarchitecture > v1
+    # -------------------------------------------------------------------------
+    # ALHP Setup (only for x86-64-v2 and above)
+    # -------------------------------------------------------------------------
+    local alhp_ready=false
     if [[ "$march" != "v1" ]]; then
-        log_info "Installing ALHP keyrings/mirrorlist via paru from AUR for x86-64-${march}..."
-        paru -S --needed --noconfirm alhp-keyring alhp-mirrorlist || log_warn "ALHP package install returned non-zero; verifying fallback mirrors."
-        sudo pacman-key --populate alhp 2>/dev/null || true
+        log_info "Setting up ALHP repositories for x86-64-${march}..."
 
-        # Ensure /etc/pacman.d/alhp-mirrorlist exists with active servers
+        # Install alhp-mirrorlist first (does not require signing keys)
+        log_info "Installing alhp-mirrorlist from AUR..."
+        paru -S --needed --noconfirm alhp-mirrorlist 2>/dev/null || log_warn "alhp-mirrorlist AUR install failed."
+
+        # Ensure mirrorlist file exists with active servers (create fallback if AUR package failed)
         if [[ ! -s /etc/pacman.d/alhp-mirrorlist ]]; then
             log_info "Creating default ALHP mirrorlist fallback in /etc/pacman.d/alhp-mirrorlist..."
             sudo mkdir -p /etc/pacman.d
-            cat << 'EOF' | sudo tee /etc/pacman.d/alhp-mirrorlist >/dev/null
-Server = https://alhp.bht-berlin.de/$repo/os/$arch
-Server = https://mirror.cachyos.org/ALHP/$repo/os/$arch
-EOF
+            cat << 'MIRROREOF' | sudo tee /etc/pacman.d/alhp-mirrorlist > /dev/null
+Server = https://alhp.harting.dev/$repo/os/$arch
+Server = https://alhp2.harting.dev/$repo/os/$arch
+MIRROREOF
         elif ! grep -q "^Server" /etc/pacman.d/alhp-mirrorlist; then
             log_info "Activating default ALHP mirror in /etc/pacman.d/alhp-mirrorlist..."
             sudo sed -i '0,/^#Server/s/^#//' /etc/pacman.d/alhp-mirrorlist
         fi
+
+        # Install alhp-keyring (separate call for better error isolation)
+        log_info "Installing alhp-keyring from AUR..."
+        if paru -S --needed --noconfirm alhp-keyring 2>/dev/null; then
+            log_success "alhp-keyring installed successfully via paru."
+        else
+            log_warn "alhp-keyring paru build failed. Attempting manual build with --skippgpcheck..."
+            # Fallback: clone PKGBUILD directly and build with relaxed PGP source verification
+            local kr_build_dir
+            kr_build_dir=$(mktemp -d -p /tmp alhp-kr-XXXXXX)
+            CLEANUP_PATHS+=("$kr_build_dir")
+            if git clone --depth 1 https://aur.archlinux.org/alhp-keyring.git "${kr_build_dir}/alhp-keyring" 2>/dev/null; then
+                if (cd "${kr_build_dir}/alhp-keyring" && makepkg -si --noconfirm --skippgpcheck 2>&1); then
+                    log_success "alhp-keyring built and installed via manual fallback."
+                else
+                    log_warn "alhp-keyring manual build also failed."
+                fi
+            else
+                log_warn "Failed to clone alhp-keyring from AUR."
+            fi
+            rm -rf "$kr_build_dir" 2>/dev/null || true
+        fi
+
+        # Populate ALHP keyring in pacman-key
+        sudo pacman-key --populate alhp 2>/dev/null || true
+
+        # Verify ALHP keyring is present before allowing repository injection
+        if pacman -Q alhp-keyring &>/dev/null || sudo pacman-key --list-keys alhp &>/dev/null; then
+            alhp_ready=true
+            log_success "ALHP keyring verified in pacman-key trust database."
+        else
+            log_warn "ALHP keyring could NOT be verified. ALHP repositories will NOT be injected into pacman.conf."
+            log_warn "You can retry manually later with: paru -S alhp-keyring"
+        fi
     fi
 
-    # 3. Attempt BlackArch keyring and mirrorlist installation
+    # -------------------------------------------------------------------------
+    # BlackArch Setup
+    # -------------------------------------------------------------------------
     log_info "Attempting BlackArch keyring installation..."
     paru -S --needed --noconfirm blackarch-keyring blackarch-mirrorlist 2>/dev/null || true
     sudo pacman-key --populate blackarch 2>/dev/null || true
 
     if [[ ! -s /etc/pacman.d/blackarch-mirrorlist ]]; then
         log_info "Configuring default mirror in /etc/pacman.d/blackarch-mirrorlist..."
-        echo "Server = https://blackarch.org/blackarch/\$repo/os/\$arch" | sudo tee /etc/pacman.d/blackarch-mirrorlist >/dev/null
+        echo 'Server = https://blackarch.org/blackarch/$repo/os/$arch' | sudo tee /etc/pacman.d/blackarch-mirrorlist > /dev/null
     fi
 
-    # Backup /etc/pacman.conf
+    # -------------------------------------------------------------------------
+    # Inject repositories into /etc/pacman.conf
+    # -------------------------------------------------------------------------
+
+    # Backup existing pacman.conf
     local backup_conf="/etc/pacman.conf.bak.$(date +%Y%m%d_%H%M%S)"
     sudo cp /etc/pacman.conf "$backup_conf"
     log_info "Backup created at ${backup_conf}"
 
-    # Build ALHP configuration block to inject ABOVE [core]
+    # Build ALHP configuration block (only if keyring is verified)
     local alhp_block=""
-    if [[ "$march" != "v1" && -s /etc/pacman.d/alhp-mirrorlist ]]; then
+    if [[ "$alhp_ready" == true ]] && [[ -s /etc/pacman.d/alhp-mirrorlist ]]; then
         alhp_block="# ALHP (Arch Linux Hardened Packages - x86-64-${march})
 [core-x86-64-${march}]
 Include = /etc/pacman.d/alhp-mirrorlist
@@ -97,11 +142,12 @@ Include = /etc/pacman.d/alhp-mirrorlist"
         fi
     fi
 
-    # Inject ALHP ABOVE [core] using secure mktemp and ENVIRON to prevent awk multiline escaping issues
+    # Inject ALHP block ABOVE [core] using root-owned mktemp to avoid
+    # fs.protected_regular permission denials on sticky-bit /tmp
     if [[ -n "$alhp_block" ]] && ! grep -q "core-x86-64-${march}" /etc/pacman.conf; then
         log_info "Injecting ALHP repositories ABOVE [core] in /etc/pacman.conf..."
         local tmp_conf
-        tmp_conf=$(mktemp -p /tmp pacman.conf.XXXXXX)
+        tmp_conf=$(sudo mktemp -p /tmp pacman.conf.XXXXXX)
         CLEANUP_PATHS+=("$tmp_conf")
 
         sudo env ALHP_BLOCK="$alhp_block" awk '
@@ -110,19 +156,26 @@ Include = /etc/pacman.d/alhp-mirrorlist"
                 inserted = 1
             }
             { print }
-        ' /etc/pacman.conf | sudo tee "$tmp_conf" >/dev/null
+        ' /etc/pacman.conf | sudo tee "$tmp_conf" > /dev/null
 
         sudo cp "$tmp_conf" /etc/pacman.conf
-        rm -f "$tmp_conf"
+        sudo rm -f "$tmp_conf"
+        log_success "ALHP repositories injected into /etc/pacman.conf."
     else
-        log_info "ALHP repository entries already present or architecture is v1. Skipping injection."
+        if [[ "$march" == "v1" ]]; then
+            log_info "Microarchitecture is v1, no ALHP optimization available."
+        elif [[ "$alhp_ready" != true ]]; then
+            log_warn "Skipping ALHP injection due to missing keyring."
+        else
+            log_info "ALHP repository entries already present. Skipping injection."
+        fi
     fi
 
-    # Inject BlackArch repository only if blackarch keys/keyring are present to prevent pacman signature failures
+    # Inject BlackArch repository (only if keys are verified)
     if sudo pacman-key --list-keys blackarch &>/dev/null || pacman -Q blackarch-keyring &>/dev/null; then
         if ! grep -q "^\[blackarch\]" /etc/pacman.conf; then
             log_info "Injecting BlackArch repository with 'Usage = Sync Search' into /etc/pacman.conf..."
-            cat << 'EOF' | sudo tee -a /etc/pacman.conf >/dev/null
+            cat << 'EOF' | sudo tee -a /etc/pacman.conf > /dev/null
 
 # BlackArch Linux Repository (Restricted to Sync & Search to avoid conflicts)
 [blackarch]

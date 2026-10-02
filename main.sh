@@ -50,7 +50,11 @@ log_error() {
 # Process Management & Dynamic Cleanup Hooks
 # ------------------------------------------------------------------------------
 SUDO_PID=""
+FAIL_LINENO=""
 declare -a CLEANUP_PATHS=()
+
+# Capture the actual failing line number via ERR trap (fires before EXIT)
+trap 'FAIL_LINENO=$LINENO' ERR
 
 cleanup() {
     local exit_code=$?
@@ -70,11 +74,12 @@ cleanup() {
     fi
 
     if [[ $exit_code -ne 0 ]]; then
+        local reported_line="${FAIL_LINENO:-unknown}"
         printf "\n${COLOR_RED}${COLOR_BOLD}Pipeline failed at line %s with exit code %s.${COLOR_RESET}\n" \
-            "${BASH_LINENO[0]}" "$exit_code" >&2
+            "$reported_line" "$exit_code" >&2
     fi
 }
-trap cleanup EXIT INT TERM ERR
+trap cleanup EXIT INT TERM
 
 # ------------------------------------------------------------------------------
 # Startup Banner
@@ -137,6 +142,31 @@ confirm_execution() {
 }
 
 # ------------------------------------------------------------------------------
+# Stage Prompt (Skip / Proceed / Quit per-stage)
+# ------------------------------------------------------------------------------
+prompt_stage() {
+    local stage_name="$1"
+    if [[ -t 0 ]]; then
+        printf "\n${COLOR_MAGENTA}${COLOR_BOLD}>> %s${COLOR_RESET}\n" "$stage_name"
+        read -rp "   [Y]es (default) / [S]kip / [Q]uit: " choice
+        case "${choice,,}" in
+            s|skip)
+                log_info "Skipping: ${stage_name}"
+                return 1
+                ;;
+            q|quit)
+                log_warn "Execution aborted by user at: ${stage_name}"
+                exit 0
+                ;;
+            *)
+                return 0
+                ;;
+        esac
+    fi
+    return 0
+}
+
+# ------------------------------------------------------------------------------
 # Full System Upgrade Routine
 # ------------------------------------------------------------------------------
 perform_system_upgrade() {
@@ -170,31 +200,49 @@ main() {
     confirm_execution
 
     # Step 1: Toolchain & AUR Helper (paru)
-    build_paru_helper
+    if prompt_stage "STEP 1: Toolchain & AUR Helper (paru)"; then
+        build_paru_helper
+    fi
 
     # Step 2: Microarchitecture & Repository Configuration (ALHP, BlackArch)
-    configure_repositories
+    if prompt_stage "STEP 2: Repository Configuration (ALHP, BlackArch)"; then
+        configure_repositories
+    fi
 
     # Step 3: Verify Repository Synchronization
-    verify_repository_sync
+    if prompt_stage "STEP 3: Repository Synchronization Verification"; then
+        verify_repository_sync
+    fi
 
     # Full System Upgrade #1: Post-Repository Setup
-    perform_system_upgrade "Post-Repository Configuration"
+    if prompt_stage "Full System Upgrade (Post-Repository Configuration)"; then
+        perform_system_upgrade "Post-Repository Configuration"
+    fi
 
     # Step 4: Core System Packages & Shell Configuration
-    install_system_packages
+    if prompt_stage "STEP 4: Core System Packages & Shell Configuration"; then
+        install_system_packages
+    fi
 
-    # Step 5: Extras (Web Browser Selection & Installation)
-    install_browser_extras
+    # Extras: Web Browser Selection & Installation
+    if prompt_stage "EXTRAS: Web Browser Installation"; then
+        install_browser_extras
+    fi
 
-    # Step 6: System Services, Display Manager & Wayland Environment
-    configure_system_services
+    # Step 5: System Services, Display Manager & Wayland Environment
+    if prompt_stage "STEP 5: System Services & Display Manager Configuration"; then
+        configure_system_services
+    fi
 
-    # Step 7: Core Dotfiles & Wallpaper Deployment
-    deploy_core_dotfiles
+    # Step 6: Core Dotfiles & Wallpaper Deployment
+    if prompt_stage "STEP 6: Dotfiles & Wallpaper Deployment"; then
+        deploy_core_dotfiles
+    fi
 
     # Full System Upgrade #2: Script Finale
-    perform_system_upgrade "Final System Upgrade"
+    if prompt_stage "Full System Upgrade (Final)"; then
+        perform_system_upgrade "Final System Upgrade"
+    fi
 
     printf "\n"
     log_success "================================================================="
@@ -202,7 +250,7 @@ main() {
     log_success " Wayfire Compositor & Desktop Suite Ready for First Login.       "
     log_success "================================================================="
 
-    # Step 8: Display Post-Install Manual Checklist
+    # Display Post-Install Manual Checklist
     display_postinstall_instructions
 
     printf "\n${COLOR_YELLOW}Recommendation: Reboot your system now via 'sudo reboot'.${COLOR_RESET}\n"
