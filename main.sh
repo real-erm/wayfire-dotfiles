@@ -120,6 +120,22 @@ check_privileges() {
 }
 
 # ------------------------------------------------------------------------------
+# Paru Configuration Sanitizer
+# ------------------------------------------------------------------------------
+sanitize_paru_config() {
+    if [[ -f "${HOME}/.config/paru/paru.conf" ]]; then
+        sed -i '/^[[:space:]]*Color/d' "${HOME}/.config/paru/paru.conf" 2>/dev/null || true
+        sed -i '/^[[:space:]]*FileManager/d' "${HOME}/.config/paru/paru.conf" 2>/dev/null || true
+    fi
+    if grep -q "^#Color" /etc/pacman.conf 2>/dev/null; then
+        sudo sed -i 's/^#Color/Color/' /etc/pacman.conf 2>/dev/null || true
+    fi
+    if grep -q "^#VerbosePkgLists" /etc/pacman.conf 2>/dev/null; then
+        sudo sed -i 's/^#VerbosePkgLists/VerbosePkgLists/' /etc/pacman.conf 2>/dev/null || true
+    fi
+}
+
+# ------------------------------------------------------------------------------
 # Interactive Confirmation Prompt
 # ------------------------------------------------------------------------------
 confirm_execution() {
@@ -197,6 +213,7 @@ source "${SCRIPT_DIR}/postinstall/display_summary.sh"
 main() {
     display_banner
     check_privileges
+    sanitize_paru_config
     confirm_execution
 
     # Step 1: Toolchain & AUR Helper (paru)

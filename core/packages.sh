@@ -50,7 +50,14 @@ EOF
 install_system_packages() {
     log_step "STEP 4: Package Installation & Default Shell Setup"
 
-    local system_packages=(
+    # Sanitize paru.conf before any operations to eliminate unknown option errors
+    if [[ -f "${HOME}/.config/paru/paru.conf" ]]; then
+        sed -i '/^[[:space:]]*Color/d' "${HOME}/.config/paru/paru.conf" 2>/dev/null || true
+        sed -i '/^[[:space:]]*FileManager/d' "${HOME}/.config/paru/paru.conf" 2>/dev/null || true
+    fi
+
+    # 1. Official Arch Repository Packages (Installed directly via pacman for maximum speed and reliability)
+    local official_packages=(
         # Compositor & Display
         wayfire
         xorg-xwayland
@@ -74,7 +81,6 @@ install_system_packages() {
         waybar
         fuzzel
         mako
-        wlogout
         yad
         kanshi
         networkmanager
@@ -107,6 +113,7 @@ install_system_packages() {
         geany
         vlc
         qt6-wayland
+        qt6-multimedia-ffmpeg
         imv
         mpd
         mpc
@@ -129,21 +136,51 @@ install_system_packages() {
         imagemagick
     )
 
-    log_info "Installing core package stack via paru..."
-    if ! paru -S --needed --noconfirm "${system_packages[@]}"; then
-        log_warn "Bulk package installation encountered an error. Retrying with individual package fallback..."
-        for pkg in "${system_packages[@]}"; do
-            paru -S --needed --noconfirm "$pkg" || log_warn "Failed to install optional package: $pkg (skipping)"
-        done
+    log_info "Installing official repository packages via pacman..."
+    sudo pacman -S --needed --noconfirm "${official_packages[@]}"
+    log_success "Official package stack successfully installed."
+
+    # 2. AUR Packages (wlogout with GPG key pre-import and --skippgpcheck fallback)
+    if ! command -v wlogout &>/dev/null; then
+        log_info "Installing wlogout from AUR..."
+        # Import ArtsyMacaw's public signing key (E25D679AF73C6D2F) to prevent makepkg signature verification aborts
+        gpg --recv-keys E25D679AF73C6D2F 2>/dev/null || \
+            gpg --keyserver keyserver.ubuntu.com --recv-keys E25D679AF73C6D2F 2>/dev/null || \
+            gpg --keyserver hkps://keys.openpgp.org --recv-keys E25D679AF73C6D2F 2>/dev/null || true
+
+        if ! paru -S --needed --noconfirm --mflags "--skippgpcheck" wlogout 2>/dev/null; then
+            log_warn "Standard paru install failed for wlogout. Attempting manual build with --skippgpcheck..."
+            local wl_dir
+            wl_dir=$(mktemp -d -p /tmp wlogout-build-XXXXXX)
+            CLEANUP_PATHS+=("$wl_dir")
+            if git clone --depth 1 https://aur.archlinux.org/wlogout.git "${wl_dir}/wlogout" 2>/dev/null; then
+                (
+                    cd "${wl_dir}/wlogout"
+                    makepkg -si --noconfirm --skippgpcheck
+                ) || log_warn "wlogout manual build failed; fuzzel power menu overlay will be used as fallback."
+            fi
+            rm -rf "$wl_dir" 2>/dev/null || true
+        fi
+
+        if command -v wlogout &>/dev/null; then
+            log_success "wlogout installed successfully."
+        else
+            log_info "wlogout not installed; fuzzel power menu overlay is active as fallback."
+        fi
     fi
 
+    # 3. Default Shell Setup
     log_info "Configuring default user shell to fish..."
     local fish_bin
     fish_bin=$(command -v fish || echo "/usr/bin/fish")
     if ! grep -qxF "$fish_bin" /etc/shells; then
         echo "$fish_bin" | sudo tee -a /etc/shells >/dev/null
     fi
-    sudo chsh -s "$fish_bin" "$USER"
+    local current_user_shell
+    current_user_shell=$(getent passwd "$USER" | cut -d: -f7)
+    if [[ "$current_user_shell" != "$fish_bin" ]]; then
+        sudo chsh -s "$fish_bin" "$USER"
+    fi
 
     log_success "Core package stack and shell configuration complete."
 }

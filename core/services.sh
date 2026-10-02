@@ -91,6 +91,12 @@ EOF
 plugins = autostart
 close_top_view = none
 
+[input]
+mouse_accel_profile = flat
+accel_profile = flat
+pointer_accel = 0.0
+touchpad_accel_profile = flat
+
 [autostart]
 greeter = sh -c 'regreet --style /etc/greetd/regreet.css; wayfiremsg exit || killall wayfire'
 EOF

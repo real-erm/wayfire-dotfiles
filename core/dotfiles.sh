@@ -187,6 +187,8 @@ gtk-decoration-layout=icon:minimize,maximize,close"
         gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark' 2>/dev/null || true
         gsettings set org.gnome.desktop.interface font-name 'JetBrainsMono Nerd Font 10' 2>/dev/null || true
         gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null || true
+        gsettings set org.gnome.desktop.peripherals.mouse accel-profile 'flat' 2>/dev/null || true
+        gsettings set org.gnome.desktop.peripherals.touchpad accel-profile 'flat' 2>/dev/null || true
     fi
 
     # Setup wallpaper
