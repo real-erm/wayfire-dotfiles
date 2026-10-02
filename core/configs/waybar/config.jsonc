@@ -1,17 +1,26 @@
 {
     "layer": "top",
     "position": "top",
-    "height": 34,
-    "margin-top": 6,
-    "margin-left": 10,
-    "margin-right": 10,
-    "modules-left": ["custom/arch", "wlr/taskbar"],
+    "height": 32,
+    "spacing": 4,
+    "modules-left": ["custom/arch", "custom/files", "custom/screenshot", "wlr/taskbar"],
     "modules-center": ["clock"],
-    "modules-right": ["tray", "pulseaudio", "backlight", "network", "bluetooth", "battery", "custom/power"],
+    "modules-right": ["pulseaudio", "backlight", "network", "bluetooth", "custom/language", "custom/clipboard", "battery", "tray", "custom/power"],
     "custom/arch": {
-        "format": "  ",
-        "tooltip": false,
-        "on-click": "rofi -show drun || wofi --show drun || fuzzel"
+        "format": "",
+        "tooltip-format": "Launcher (Ctrl+Space)",
+        "on-click": "rofi -show drun"
+    },
+    "custom/files": {
+        "format": "",
+        "tooltip-format": "Files (Nautilus) (Super+E)",
+        "on-click": "nautilus --new-window"
+    },
+    "custom/screenshot": {
+        "format": "",
+        "tooltip-format": "Screenshot (Left: Area, Right: Full)",
+        "on-click": "bash -c ~/.config/wayfire/scripts/screenshot.sh area",
+        "on-click-right": "bash -c ~/.config/wayfire/scripts/screenshot.sh full"
     },
     "wlr/taskbar": {
         "format": "{icon}",
@@ -20,7 +29,7 @@
         "on-click": "activate"
     },
     "clock": {
-        "format": " {:%H:%M   %a, %d %b}",
+        "format": "  {:%H:%M     %a, %d %b}",
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
     },
     "tray": {
@@ -28,30 +37,44 @@
         "spacing": 8
     },
     "pulseaudio": {
-        "format": "{icon} {volume}%",
-        "format-muted": " muted",
+        "format": "{icon}  {volume}%",
+        "format-muted": "󰝟  muted",
         "format-icons": {
-            "default": ["", "", ""]
+            "default": ["󰕿", "󰖀", "󰕾"]
         },
         "on-click": "pavucontrol || pulsemixer"
     },
     "backlight": {
-        "format": "{icon} {percent}%",
-        "format-icons": ["", ""]
+        "format": "{icon}  {percent}%",
+        "format-icons": ["󰃞", "󰃟", "󰃠"]
     },
     "network": {
-        "format-wifi": " {essid}",
-        "format-ethernet": "󰈀 {ifname}",
-        "format-linked": "󰈀 {ifname} (No IP)",
-        "format-disconnected": "⚠ Disconnected",
+        "format-wifi": "  {essid}",
+        "format-ethernet": "󰈀  {ifname}",
+        "format-linked": "󰈀  {ifname} (No IP)",
+        "format-disconnected": "󰤮  Offline",
         "tooltip-format": "{ifname} via {gwaddr}",
         "on-click": "nm-connection-editor || networkmanager_dmenu"
     },
     "bluetooth": {
-        "format": " {status}",
-        "format-connected": " {device_alias}",
-        "format-connected-battery": " {device_alias} {device_battery_percentage}%",
+        "format": "  {status}",
+        "format-connected": "  {device_alias}",
+        "format-connected-battery": "  {device_alias} {device_battery_percentage}%",
+        "max-length": 16,
         "on-click": "blueman-manager"
+    },
+    "custom/language": {
+        "exec": "bash -c ~/.config/wayfire/scripts/layout.sh get",
+        "interval": 2,
+        "format": "󰌌  {}",
+        "tooltip-format": "Keyboard Layout: {}\nClick to toggle (Win+Space / Alt+Shift)",
+        "on-click": "bash -c ~/.config/wayfire/scripts/layout.sh toggle"
+    },
+    "custom/clipboard": {
+        "format": "󰅌",
+        "tooltip-format": "Clipboard (Left: Open, Right: Wipe)",
+        "on-click": "copyq toggle || bash -c ~/.config/wayfire/scripts/clipboard.sh pick",
+        "on-click-right": "bash -c ~/.config/wayfire/scripts/clipboard.sh wipe"
     },
     "battery": {
         "states": {
@@ -59,11 +82,11 @@
             "critical": 15
         },
         "format": "{icon} {capacity}%",
-        "format-icons": ["", "", "", "", ""]
+        "format-icons": ["󰂎", "󰁺", "󰁼", "󰁾", "󰂀", "󰁹"]
     },
     "custom/power": {
         "format": "",
-        "tooltip": false,
+        "tooltip-format": "Power Menu (Super+X)",
         "on-click": "bash -c ~/.config/wayfire/scripts/powermenu.sh"
     }
 }

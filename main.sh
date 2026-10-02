@@ -236,8 +236,13 @@ main() {
         perform_system_upgrade "Post-Repository Configuration"
     fi
 
-    # Step 4: Core System Packages & Shell Configuration
-    if prompt_stage "STEP 4: Core System Packages & Shell Configuration"; then
+    # Step 4: Conflicting Package Audit & Hygiene
+    if prompt_stage "STEP 4: Conflicting Package Audit & Hygiene"; then
+        audit_conflicting_packages
+    fi
+
+    # Step 5: Core System Packages & Shell Configuration
+    if prompt_stage "STEP 5: Core System Packages & Shell Configuration"; then
         install_system_packages
     fi
 
@@ -246,13 +251,13 @@ main() {
         install_browser_extras
     fi
 
-    # Step 5: System Services, Display Manager & Wayland Environment
-    if prompt_stage "STEP 5: System Services & Display Manager Configuration"; then
+    # Step 6: System Services, Display Manager & Wayland Environment
+    if prompt_stage "STEP 6: System Services & Display Manager Configuration"; then
         configure_system_services
     fi
 
-    # Step 6: Core Dotfiles & Wallpaper Deployment
-    if prompt_stage "STEP 6: Dotfiles & Wallpaper Deployment"; then
+    # Step 7: Core Dotfiles & Wallpaper Deployment
+    if prompt_stage "STEP 7: Dotfiles & Wallpaper Deployment"; then
         deploy_core_dotfiles
     fi
 

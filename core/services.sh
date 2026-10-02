@@ -15,6 +15,10 @@ setup_environment() {
         "GDK_BACKEND=wayland,x11"
         "QT_QPA_PLATFORM=wayland;xcb"
         "QT_QPA_PLATFORMTHEME=qt5ct"
+        "QT_STYLE_OVERRIDE=kvantum"
+        "GTK_THEME=Adwaita:dark"
+        "XCURSOR_THEME=Bibata-Modern-Classic"
+        "XCURSOR_SIZE=24"
         "MOZ_ENABLE_WAYLAND=1"
         "XDG_CURRENT_DESKTOP=Wayfire"
         "XDG_SESSION_TYPE=wayland"
@@ -40,6 +44,10 @@ setup_environment() {
 GDK_BACKEND=wayland,x11
 QT_QPA_PLATFORM=wayland;xcb
 QT_QPA_PLATFORMTHEME=qt5ct
+QT_STYLE_OVERRIDE=kvantum
+GTK_THEME=Adwaita:dark
+XCURSOR_THEME=Bibata-Modern-Classic
+XCURSOR_SIZE=24
 MOZ_ENABLE_WAYLAND=1
 XDG_CURRENT_DESKTOP=Wayfire
 XDG_SESSION_TYPE=wayland
@@ -107,8 +115,8 @@ greeting_message = "Welcome to Arch Linux"
 
 [GTK]
 application_prefer_dark_theme = true
-cursor_theme_name = "Papirus"
-font_name = "JetBrainsMono Nerd Font 11"
+cursor_theme_name = "Bibata-Modern-Classic"
+font_name = "Noto Sans 11"
 icon_theme_name = "Papirus-Dark"
 theme_name = "Adwaita-dark"
 
@@ -119,69 +127,181 @@ EOF
 
     # Configure modern glassmorphic ReGreet GTK4 CSS styling
     cat << 'EOF' | sudo tee /etc/greetd/regreet.css >/dev/null
-/* ReGreet Modern Clean Glassmorphism Aesthetic */
+/* ReGreet High-Contrast Clean Modern Theme */
+
 window {
-    background-color: #1a1b26;
+    background-color: #12131a;
+    color: #ffffff;
+    font-family: "Noto Sans", "JetBrainsMono Nerd Font", sans-serif;
 }
 
-#lock-box {
-    background-color: rgba(36, 40, 59, 0.88);
-    border: 1px solid rgba(122, 162, 247, 0.4);
+picture {
+    filter: brightness(0.85);
+}
+
+/* Central Login Card (High contrast dark slate card) */
+overlay > frame.background {
+    background-color: rgba(18, 20, 29, 0.96);
+    border: 1px solid rgba(122, 162, 247, 0.45);
     border-radius: 18px;
-    padding: 36px 42px;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    padding: 30px 42px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
 }
 
-#greeting {
+/* Clock Frame (Top pill) */
+overlay > frame.background:first-child {
+    background-color: rgba(18, 20, 29, 0.96);
+    border: 1px solid rgba(122, 162, 247, 0.35);
+    border-top: none;
+    border-radius: 0 0 16px 16px;
+    padding: 6px 24px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Clock text: Bright Crisp White */
+overlay > frame.background:first-child label {
     font-size: 22px;
-    font-weight: 700;
-    color: #7aa2f7;
-    margin-bottom: 8px;
-}
-
-#clock {
-    font-size: 34px;
     font-weight: 800;
-    color: #c0caf5;
-    margin-bottom: 16px;
+    color: #ffffff !important;
     letter-spacing: 0.5px;
 }
 
-entry {
-    background-color: rgba(26, 27, 38, 0.85);
-    color: #c0caf5;
-    border: 1px solid #414868;
-    border-radius: 10px;
-    padding: 10px 14px;
-    margin: 8px 0;
+/* High Contrast Field Labels (User:, Session:, Password:) */
+label {
+    color: #f0f4fc !important;
     font-size: 14px;
-}
-
-entry:focus {
-    border-color: #7aa2f7;
-    box-shadow: 0 0 0 2px rgba(122, 162, 247, 0.35);
-}
-
-button {
-    background-color: #7aa2f7;
-    color: #1a1b26;
-    border-radius: 10px;
     font-weight: 700;
-    padding: 10px 20px;
-    border: none;
-    transition: all 0.2s ease-in-out;
+}
+
+/* Header greeting label */
+label:first-child {
+    font-size: 18px;
+    font-weight: 800;
+    color: #7aa2f7 !important;
+    margin-bottom: 6px;
+}
+
+/* Text & Password input fields */
+entry,
+passwordentry {
+    background-color: #1a1c28;
+    color: #ffffff !important;
+    border: 1.5px solid #3b4261;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 42px;
+    box-shadow: none;
+    transition: all 150ms ease;
+}
+
+entry:focus,
+passwordentry:focus {
+    border-color: #7aa2f7;
+    background-color: #24283b;
+    box-shadow: 0 0 0 2px rgba(122, 162, 247, 0.4);
+}
+
+/* ComboBox dropdowns */
+combobox,
+combobox button {
+    background-color: #1a1c28;
+    color: #ffffff !important;
+    border: 1.5px solid #3b4261;
+    border-radius: 10px;
+    padding: 6px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 42px;
+}
+
+combobox label,
+combobox cellview {
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+combobox button:hover {
+    border-color: #7aa2f7;
+    background-color: #24283b;
+}
+
+/* Edit toggle buttons */
+button {
+    background-color: #24283b;
+    color: #ffffff !important;
+    border: 1.5px solid #3b4261;
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    transition: all 150ms ease;
+}
+
+button label {
+    color: #ffffff !important;
 }
 
 button:hover {
-    background-color: #89b4fa;
+    background-color: #3b4261;
+    border-color: #7aa2f7;
+    color: #ffffff !important;
 }
 
-combo {
-    background-color: rgba(26, 27, 38, 0.85);
-    color: #c0caf5;
-    border: 1px solid #414868;
+/* Primary Login Action Button: Bold Blue with Sharp White Text */
+button.suggested-action {
+    background-color: #3b82f6 !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    font-size: 14px;
+    border: 1.5px solid #60a5fa !important;
     border-radius: 10px;
-    padding: 6px 12px;
+    padding: 8px 24px;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+}
+
+button.suggested-action label {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+}
+
+button.suggested-action:hover {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 18px rgba(59, 130, 246, 0.6);
+}
+
+/* Power & Action Buttons (Reboot / Poweroff) */
+button.destructive-action {
+    background-color: rgba(247, 118, 142, 0.18);
+    color: #f7768e !important;
+    border: 1.5px solid rgba(247, 118, 142, 0.45);
+    border-radius: 10px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+button.destructive-action label {
+    color: #f7768e !important;
+}
+
+button.destructive-action:hover {
+    background-color: #f7768e !important;
+    color: #12131a !important;
+}
+
+button.destructive-action:hover label {
+    color: #12131a !important;
+}
+
+/* Bottom Actions Container */
+box.vertical > frame.background {
+    border-radius: 14px;
+    padding: 4px 10px;
+    margin-bottom: 8px;
 }
 EOF
 

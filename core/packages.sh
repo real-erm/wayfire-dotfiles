@@ -11,10 +11,14 @@ build_paru_helper() {
     log_info "Synchronizing package databases via pacman -Sy..."
     sudo pacman -Sy
 
-    # Enable native Color and VerbosePkgLists in /etc/pacman.conf so pacman and paru render cleanly
-    log_info "Enabling native Color and VerbosePkgLists in /etc/pacman.conf..."
-    sudo sed -i 's/^#Color/Color/' /etc/pacman.conf
-    sudo sed -i 's/^#VerbosePkgLists/VerbosePkgLists/' /etc/pacman.conf
+    # Enable native Color, VerbosePkgLists and DisableDownloadTimeout in /etc/pacman.conf
+    log_info "Enabling native Color, VerbosePkgLists and DisableDownloadTimeout in /etc/pacman.conf..."
+    sudo sed -i 's/^#Color/Color/' /etc/pacman.conf 2>/dev/null || true
+    sudo sed -i 's/^#VerbosePkgLists/VerbosePkgLists/' /etc/pacman.conf 2>/dev/null || true
+    sudo sed -i 's/^#DisableDownloadTimeout/DisableDownloadTimeout/' /etc/pacman.conf 2>/dev/null || true
+    if ! grep -q "^DisableDownloadTimeout" /etc/pacman.conf 2>/dev/null; then
+        sudo sed -i '/^ParallelDownloads/a DisableDownloadTimeout' /etc/pacman.conf 2>/dev/null || true
+    fi
 
     log_info "Installing prerequisite build toolchain via pacman..."
     sudo pacman -S --needed --noconfirm base-devel git rust bat
@@ -47,8 +51,143 @@ EOF
     log_success "paru configuration deployed."
 }
 
+# ------------------------------------------------------------------------------
+# Conflicting Package Audit & Hygiene Subsystem
+# ------------------------------------------------------------------------------
+audit_conflicting_packages() {
+    log_step "STEP: Package Conflict Detection & Hygiene Audit"
+    log_info "Auditing system for packages that conflict with the Wayfire desktop suite..."
+
+    # Candidate conflicting / redundant packages across core desktop categories
+    local -a candidate_conflicts=(
+        # File Managers (conflicts with Nautilus / PCManFM-Qt desktop stack)
+        thunar
+        thunar-volman
+        thunar-archive-plugin
+        tumbler
+        dolphin
+        nemo
+        caja
+        pcmanfm             # Legacy GTK version (we bundle pcmanfm-qt)
+
+        # Screen Capture (conflicts with Grim/Slurp/Swappy Wayland stack)
+        spectacle
+        flameshot
+        ksnip
+
+        # Notification Daemons (conflicts with Mako; multiple daemons cause D-Bus clashes)
+        dunst
+        fnott
+        swaync
+        xfce4-notifyd
+
+        # Screen Lockers (conflicts with Hyprlock)
+        swaylock
+        swaylock-effects
+        i3lock
+
+        # Redundant/Conflicting Polkit Agents
+        polkit-kde-agent
+        lxsession
+        lxqt-policykit
+
+        # Redundant / Legacy App Launchers (conflicts with bundled rofi-wayland)
+        wofi
+        fuzzel
+        tofi
+        dmenu
+
+        # Legacy Desktop Panels (conflicts with Waybar)
+        tint2
+        polybar
+        xfce4-panel
+
+        # Conflicting / Unreadable Fancy Calligraphy Fonts (superseded by clean Noto Sans Arabic)
+        ttf-scheherazade-new
+    )
+
+    # Protected whitelist: apps bundled by this setup that MUST NOT be removed
+    local -a bundled_whitelist=(
+        nautilus
+        gvfs
+        gvfs-mtp
+        gvfs-smb
+        file-roller
+        sushi
+        pcmanfm-qt
+        rofi-wayland
+        nwg-menu
+        waybar
+        mako
+        hyprlock
+        swayidle
+        swappy
+        grim
+        slurp
+        copyq
+        cliphist
+        wl-clipboard
+        foot
+        alacritty
+        wayfire
+        wf-shell
+        wcm
+        xsettingsd
+        greetd
+        greetd-regreet
+    )
+
+    local -a detected_conflicts=()
+    for pkg in "${candidate_conflicts[@]}"; do
+        if pacman -Qq "$pkg" &>/dev/null; then
+            # Verify the package is NOT in the whitelist (safety invariant)
+            local is_whitelisted=0
+            for safe_pkg in "${bundled_whitelist[@]}"; do
+                if [[ "$pkg" == "$safe_pkg" ]]; then
+                    is_whitelisted=1
+                    break
+                fi
+            done
+            if [[ $is_whitelisted -eq 0 ]]; then
+                detected_conflicts+=("$pkg")
+            fi
+        fi
+    done
+
+    if (( ${#detected_conflicts[@]} == 0 )); then
+        log_success "No conflicting packages detected on the system. Package hygiene verified."
+        return 0
+    fi
+
+    log_warn "Detected ${#detected_conflicts[@]} conflicting/redundant package(s) on the system:"
+    for pkg in "${detected_conflicts[@]}"; do
+        printf "  - ${COLOR_RED}%s${COLOR_RESET}\n" "$pkg"
+    done
+
+    local proceed="y"
+    if [[ -t 0 ]]; then
+        printf "\n"
+        read -rp "Would you like to remove these conflicting packages while keeping all bundled apps? [Y/n]: " choice
+        proceed="${choice:-y}"
+    fi
+
+    case "${proceed,,}" in
+        y|yes)
+            log_info "Removing conflicting packages safely via pacman -Rns..."
+            sudo pacman -Rns --noconfirm "${detected_conflicts[@]}" 2>/dev/null || {
+                log_warn "Some packages had reverse dependencies. Attempting removal without cascading..."
+                sudo pacman -R --noconfirm "${detected_conflicts[@]}" || log_warn "Manual review may be required for some packages."
+            }
+            log_success "Conflicting packages successfully removed. Bundled stack preserved."
+            ;;
+        *)
+            log_info "Skipping conflicting package removal at user request."
+            ;;
+    esac
+}
+
 install_system_packages() {
-    log_step "STEP 4: Package Installation & Default Shell Setup"
+    log_step "STEP 5: Package Installation & Default Shell Setup"
 
     # Sanitize paru.conf before any operations to eliminate unknown option errors
     if [[ -f "${HOME}/.config/paru/paru.conf" ]]; then
@@ -56,11 +195,33 @@ install_system_packages() {
         sed -i '/^[[:space:]]*FileManager/d' "${HOME}/.config/paru/paru.conf" 2>/dev/null || true
     fi
 
+    # Ensure pacman download resilience and prevent slow-speed aborts on large downloads
+    log_info "Configuring pacman download resilience (DisableDownloadTimeout) in /etc/pacman.conf..."
+    sudo sed -i 's/^#DisableDownloadTimeout/DisableDownloadTimeout/' /etc/pacman.conf 2>/dev/null || true
+    if ! grep -q "^DisableDownloadTimeout" /etc/pacman.conf 2>/dev/null; then
+        sudo sed -i '/^ParallelDownloads/a DisableDownloadTimeout' /etc/pacman.conf 2>/dev/null || true
+    fi
+
+    # Fix IPv6 unexpected EOF connection drops (prefer IPv4 for reliable AUR & mirrors)
+    if [[ -f /etc/gai.conf ]]; then
+        sudo sed -i 's/^#precedence ::ffff:0:0\/96  100/precedence ::ffff:0:0\/96  100/' /etc/gai.conf 2>/dev/null || true
+    fi
+
+    # Optimize ALHP mirrorlist priority to use fast Cloudflare edge and disable failing cdn.alhp.dev
+    if [[ -f /etc/pacman.d/alhp-mirrorlist ]]; then
+        log_info "Prioritizing Cloudflare CDN mirror and disabling failing cdn.alhp.dev in /etc/pacman.d/alhp-mirrorlist..."
+        sudo sed -i 's|^Server = https://cdn.alhp.dev|#Server = https://cdn.alhp.dev|' /etc/pacman.d/alhp-mirrorlist 2>/dev/null || true
+        sudo sed -i '/krautflare/d' /etc/pacman.d/alhp-mirrorlist 2>/dev/null || true
+        sudo sed -i '1i Server = https://alhp.krautflare.de/$repo/os/$arch/' /etc/pacman.d/alhp-mirrorlist 2>/dev/null || true
+    fi
+
     # 1. Official Arch Repository Packages (Installed directly via pacman for maximum speed and reliability)
     local official_packages=(
-        # Compositor & Display
+        # Compositor, Desktop Management & Tools
         wayfire
         wf-shell
+        wcm
+        xsettingsd
         xorg-xwayland
         greetd
         greetd-regreet
@@ -78,16 +239,20 @@ install_system_packages() {
         xdg-desktop-portal-wlr
         xdg-desktop-portal-gtk
         xdg-user-dirs
+        totem-pl-parser
+        tevent
 
         # UI, Launchers & Utilities
         waybar
         rofi-wayland
-        wofi
-        fuzzel
+        nwg-menu
         mako
         yad
         kanshi
+        copyq
         cliphist
+        wl-clipboard
+        wtype
         networkmanager
         network-manager-applet
         bluez
@@ -111,10 +276,11 @@ install_system_packages() {
         fish
         starship
 
-        # Fonts & Icons
+        # Fonts & Icons (including modern clean Arabic typography: Noto Sans Arabic)
         ttf-jetbrains-mono-nerd
         noto-fonts
         noto-fonts-emoji
+        noto-fonts-extra
         papirus-icon-theme
 
         # Applications & Media
@@ -129,18 +295,20 @@ install_system_packages() {
         pulsemixer
         pavucontrol
         brightnessctl
-        wl-clipboard
 
-        # File Manager
-        thunar
-        tumbler
-        thunar-archive-plugin
+        # File Manager & Desktop Surface (GNOME Files + PCManFM-Qt for Desktop Menu)
+        nautilus
+        gvfs
+        gvfs-mtp
+        gvfs-smb
         file-roller
+        sushi
+        pcmanfm-qt
 
-        # Screen Capture & Color
-        spectacle
+        # Screen Capture & Color (Grim + Slurp + Swappy annotation)
         grim
         slurp
+        swappy
         wf-recorder
         pastel
         imagemagick
@@ -175,7 +343,16 @@ install_system_packages() {
         if command -v wlogout &>/dev/null; then
             log_success "wlogout installed successfully."
         else
-            log_info "wlogout not installed; fuzzel/rofi power menu overlay is active as fallback."
+            log_info "wlogout not installed; rofi power menu overlay is active as fallback."
+        fi
+    fi
+
+    # Install Bibata Cursor Theme from AUR if not already installed
+    if ! pacman -Qq bibata-cursor-theme-bin &>/dev/null && ! pacman -Qq bibata-cursor-theme &>/dev/null; then
+        log_info "Installing Bibata cursor theme (bibata-cursor-theme-bin) from AUR..."
+        if command -v paru &>/dev/null; then
+            paru -S --needed --noconfirm bibata-cursor-theme-bin 2>/dev/null || \
+            paru -S --needed --noconfirm bibata-cursor-theme 2>/dev/null || true
         fi
     fi
 

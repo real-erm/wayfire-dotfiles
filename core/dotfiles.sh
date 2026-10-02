@@ -64,18 +64,27 @@ EOF
 # Global Theming & Visual Consistency (GTK, GNOME, Qt, Kvantum, Thunar)
 # ------------------------------------------------------------------------------
 setup_theming() {
-    log_info "Configuring unified global theming (GTK3/4, Qt, GNOME, Kvantum, Thunar)..."
+    log_info "Configuring unified global theming (GTK3/4, Qt, GNOME, Kvantum, XSettings)..."
 
     local config_dir="${HOME}/.config"
     mkdir -p "${config_dir}/gtk-3.0" "${config_dir}/gtk-4.0" "${config_dir}/qt5ct" \
-             "${config_dir}/qt6ct" "${config_dir}/Kvantum"
+             "${config_dir}/qt6ct" "${config_dir}/Kvantum" "${config_dir}/xsettingsd" \
+             "${HOME}/.icons/default"
 
-    # 1. GTK3 & GTK4 Settings (Dark mode, Papirus-Dark icons, complete window buttons)
+    # Ensure Bibata-Modern-Classic cursor is provisioned if not in system directories
+    if [[ ! -d "/usr/share/icons/Bibata-Modern-Classic" && ! -d "${HOME}/.icons/Bibata-Modern-Classic" ]]; then
+        log_info "Provisioning Bibata-Modern-Classic cursor theme to ~/.icons..."
+        mkdir -p "${HOME}/.icons"
+        curl -sSL "https://github.com/ful1e5/Bibata_Cursor/releases/download/v2.0.7/Bibata-Modern-Classic.tar.xz" 2>/dev/null | tar -xJ -C "${HOME}/.icons" 2>/dev/null || true
+    fi
+
+    # 1. GTK3 & GTK4 Settings (Dark mode, Papirus-Dark icons, Bibata cursor, window buttons)
     local gtk_settings="[Settings]
 gtk-theme-name=Adwaita-dark
 gtk-icon-theme-name=Papirus-Dark
 gtk-font-name=JetBrainsMono Nerd Font 10
-gtk-cursor-theme-name=Papirus
+gtk-cursor-theme-name=Bibata-Modern-Classic
+gtk-cursor-theme-size=24
 gtk-application-prefer-dark-theme=1
 gtk-decoration-layout=:minimize,maximize,close"
 
@@ -85,19 +94,53 @@ gtk-decoration-layout=:minimize,maximize,close"
     sudo mkdir -p /etc/gtk-3.0
     echo "$gtk_settings" | sudo tee /etc/gtk-3.0/settings.ini >/dev/null
 
-    # 2. GNOME / GSettings Settings (Window control buttons, dark color scheme)
+    # Default cursor theme descriptor
+    cat << 'EOF' > "${HOME}/.icons/default/index.theme"
+[Icon Theme]
+Name=Default
+Comment=Default Cursor Theme
+Inherits=Bibata-Modern-Classic
+EOF
+
+    # 2. XSettings Daemon Configuration (Provides real-time theme & cursor sync to Xwayland/GTK)
+    cat << 'EOF' > "${config_dir}/xsettingsd/xsettingsd.conf"
+Net/ThemeName "Adwaita-dark"
+Net/IconThemeName "Papirus-Dark"
+Gtk/CursorThemeName "Bibata-Modern-Classic"
+Gtk/CursorThemeSize 24
+Gtk/FontName "JetBrainsMono Nerd Font 10"
+Gtk/ButtonImages 1
+Gtk/MenuImages 1
+Gtk/ApplicationPreferDarkTheme 1
+Gtk/DecorationLayout ":minimize,maximize,close"
+EOF
+
+    # 3. GNOME / GSettings Settings (Window control buttons, cursor, dark color scheme)
     if command -v gsettings &>/dev/null; then
-        log_info "Applying GNOME app button layout and dark preferences via gsettings..."
+        log_info "Applying GNOME app button layout, Bibata cursor, and global dark preferences..."
         gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close' 2>/dev/null || true
         gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null || true
         gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' 2>/dev/null || true
         gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark' 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface cursor-theme 'Bibata-Modern-Classic' 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface cursor-size 24 2>/dev/null || true
         gsettings set org.gnome.desktop.interface font-name 'JetBrainsMono Nerd Font 10' 2>/dev/null || true
         gsettings set org.gnome.desktop.peripherals.mouse accel-profile 'flat' 2>/dev/null || true
         gsettings set org.gnome.desktop.peripherals.touchpad accel-profile 'flat' 2>/dev/null || true
     fi
 
-    # 3. Qt5ct & Qt6ct Configuration (Align Qt applications with Kvantum / GTK)
+    # 4. Hide PCManFM-Qt launcher entry so only GNOME Files (Nautilus) is visible in menus
+    mkdir -p "${HOME}/.local/share/applications"
+    cat << 'EOF' > "${HOME}/.local/share/applications/pcmanfm-qt.desktop"
+[Desktop Entry]
+Type=Application
+Name=PCManFM-Qt File Manager
+Exec=pcmanfm-qt %U
+Icon=system-file-manager
+NoDisplay=true
+EOF
+
+    # 5. Qt5ct & Qt6ct Configuration (Align Qt applications with Kvantum / GTK)
     cat << 'EOF' > "${config_dir}/qt5ct/qt5ct.conf"
 [Appearance]
 style=kvantum-dark
@@ -120,32 +163,70 @@ general="JetBrainsMono Nerd Font,10,-1,5,50,0,0,0,0,0"
 fixed="JetBrainsMono Nerd Font,10,-1,5,50,0,0,0,0,0"
 EOF
 
-    # 4. Kvantum Theme Engine
+    # 5. Kvantum Theme Engine
     cat << 'EOF' > "${config_dir}/Kvantum/kvantum.kvconfig"
 [General]
 theme=KvDark
 EOF
 
-    # 5. Thunar File Manager Theming (Ensure GTK icon/theme bindings apply cleanly)
-    if command -v xfconf-query &>/dev/null; then
-        xfconf-query -c xsettings -p /Net/ThemeName -s "Adwaita-dark" --create -t string 2>/dev/null || true
-        xfconf-query -c xsettings -p /Net/IconThemeName -s "Papirus-Dark" --create -t string 2>/dev/null || true
-    fi
-
-    # 6. Wayfire Topbar (wf-panel / wf-shell) font & scale configuration to avoid blurriness
-    cat << 'EOF' > "${config_dir}/wf-shell.ini"
-[panel]
-autohide = false
-layer = top
-position = top
-minimal_height = 36
-css_path = ""
-widgets_left = menu
-widgets_center = clock
-widgets_right = volume network battery
+    # 6. Default File Manager MIME Association (Nautilus)
+    cat << 'EOF' > "${config_dir}/mimeapps.list"
+[Default Applications]
+inode/directory=org.gnome.Nautilus.desktop
+application/x-directory=org.gnome.Nautilus.desktop
 EOF
 
-    log_success "Global unified theming (GTK, GNOME, Qt, Kvantum, Thunar) applied."
+    # 7. Enable Arabic locale generation for system-wide font & text shaping support
+    if grep -q "^#ar_SA.UTF-8 UTF-8" /etc/locale.gen 2>/dev/null; then
+        log_info "Enabling ar_SA.UTF-8 locale in /etc/locale.gen..."
+        sudo sed -i 's/^#ar_SA.UTF-8 UTF-8/ar_SA.UTF-8 UTF-8/' /etc/locale.gen
+        sudo locale-gen 2>/dev/null || true
+    fi
+
+    # 8. Clean, modern typography priority (Noto Sans Arabic for crystal-clear readability)
+    log_info "Configuring fontconfig typography (Noto Sans Arabic priority)..."
+    mkdir -p "${config_dir}/fontconfig"
+    cat << 'EOF' > "${config_dir}/fontconfig/fonts.conf"
+<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+<fontconfig>
+  <alias>
+    <family>sans-serif</family>
+    <prefer>
+      <family>Noto Sans</family>
+      <family>Noto Sans Arabic</family>
+    </prefer>
+  </alias>
+  <alias>
+    <family>system-ui</family>
+    <prefer>
+      <family>Noto Sans</family>
+      <family>Noto Sans Arabic</family>
+    </prefer>
+  </alias>
+  <alias>
+    <family>serif</family>
+    <prefer>
+      <family>Noto Serif</family>
+      <family>Noto Naskh Arabic</family>
+    </prefer>
+  </alias>
+  <match>
+    <test compare="contains" name="lang">
+      <string>ar</string>
+    </test>
+    <edit mode="prepend" name="family">
+      <string>Noto Sans Arabic</string>
+    </edit>
+  </match>
+</fontconfig>
+EOF
+
+    sudo mkdir -p /etc/fonts
+    sudo cp -f "${config_dir}/fontconfig/fonts.conf" /etc/fonts/local.conf 2>/dev/null || true
+    fc-cache -f 2>/dev/null || true
+
+    log_success "Global unified theming (GTK, GNOME, Qt, Kvantum, XSettings, Nautilus, Typography) applied."
 }
 
 # ------------------------------------------------------------------------------
@@ -263,6 +344,38 @@ setup_wallpaper() {
         fi
     fi
 
+    # 1. Sync wallpaper to PCManFM-Qt desktop manager (active Wayfire desktop surface)
+    log_info "Configuring PCManFM-Qt desktop background with wallpaper: ${selected_wallpaper}..."
+    local pcmanfm_conf="${config_dir}/pcmanfm-qt/default/settings.conf"
+    mkdir -p "$(dirname "$pcmanfm_conf")"
+    if [[ -f "$pcmanfm_conf" ]]; then
+        if grep -q "^Wallpaper=" "$pcmanfm_conf"; then
+            sed -i "s|^Wallpaper=.*|Wallpaper=${selected_wallpaper}|" "$pcmanfm_conf"
+        else
+            sed -i "/^\[Desktop\]/a Wallpaper=${selected_wallpaper}" "$pcmanfm_conf"
+        fi
+        if grep -q "^WallpaperMode=" "$pcmanfm_conf"; then
+            sed -i "s|^WallpaperMode=.*|WallpaperMode=zoom|" "$pcmanfm_conf"
+        else
+            sed -i "/^\[Desktop\]/a WallpaperMode=zoom" "$pcmanfm_conf"
+        fi
+    else
+        cat << EOF > "$pcmanfm_conf"
+[Desktop]
+Wallpaper=${selected_wallpaper}
+WallpaperMode=zoom
+DesktopIconSize=48
+Font="JetBrainsMono Nerd Font,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0"
+FgColor=#ffffff
+BgColor=#000000
+EOF
+    fi
+
+    if pgrep -x pcmanfm-qt &>/dev/null; then
+        pcmanfm-qt -w "${selected_wallpaper}" --wallpaper-mode=zoom 2>/dev/null || true
+    fi
+
+    # 2. Sync wallpaper to hyprpaper
     log_info "Configuring hyprpaper with wallpaper: ${selected_wallpaper}..."
     cat > "${config_dir}/hypr/hyprpaper.conf" << EOF
 ipc = on
@@ -270,7 +383,8 @@ preload = ${selected_wallpaper}
 wallpaper = ,${selected_wallpaper}
 EOF
 
-    # Sync wallpaper to ReGreet display manager and system backgrounds
+    # 3. Sync wallpaper to ReGreet display manager and system backgrounds
+    log_info "Synchronizing wallpaper to ReGreet display manager..."
     sudo mkdir -p /usr/share/backgrounds /etc/greetd
     sudo cp -f "${selected_wallpaper}" /usr/share/backgrounds/default.jpg 2>/dev/null || true
     sudo cp -f "${selected_wallpaper}" /etc/greetd/wallpaper.png 2>/dev/null || true
@@ -281,7 +395,7 @@ EOF
 # Master Dotfiles Deployment Pipeline
 # ------------------------------------------------------------------------------
 deploy_core_dotfiles() {
-    log_step "STEP 6: Deploying Wayfire Dotfiles & Environment Configurations"
+    log_step "STEP 7: Deploying Wayfire Dotfiles & Environment Configurations"
 
     local src_configs="${SCRIPT_DIR}/core/configs"
     local config_dir="${HOME}/.config"
@@ -289,8 +403,8 @@ deploy_core_dotfiles() {
 
     mkdir -p "${config_dir}/waybar" "${config_dir}/fuzzel" "${config_dir}/mako" \
              "${config_dir}/wlogout" "${config_dir}/hypr" "${config_dir}/foot" \
-             "${config_dir}/alacritty" "${config_dir}/fish" "${wf_scripts}" \
-             "${HOME}/Pictures/Screenshots"
+             "${config_dir}/alacritty" "${config_dir}/fish" "${config_dir}/rofi" \
+             "${wf_scripts}" "${HOME}/Pictures/Screenshots"
 
     log_info "Deploying Wayfire and application configurations..."
     cp -f "${src_configs}/wayfire.ini" "${config_dir}/wayfire.ini"
@@ -305,15 +419,21 @@ deploy_core_dotfiles() {
     cp -f "${src_configs}/alacritty/alacritty.toml" "${config_dir}/alacritty/alacritty.toml"
     cp -f "${src_configs}/fish/config.fish" "${config_dir}/fish/config.fish"
     cp -f "${src_configs}/starship.toml" "${config_dir}/starship.toml"
+    cp -f "${src_configs}/rofi/config.rasi" "${config_dir}/rofi/config.rasi"
 
     log_info "Deploying auxiliary helper scripts..."
     cp -f "${src_configs}/scripts/screenshot.sh" "${wf_scripts}/screenshot.sh"
     cp -f "${src_configs}/scripts/volume.sh" "${wf_scripts}/volume.sh"
     cp -f "${src_configs}/scripts/brightness.sh" "${wf_scripts}/brightness.sh"
     cp -f "${src_configs}/scripts/powermenu.sh" "${wf_scripts}/powermenu.sh"
+    cp -f "${src_configs}/scripts/clipboard.sh" "${wf_scripts}/clipboard.sh"
+    cp -f "${src_configs}/scripts/layout.sh" "${wf_scripts}/layout.sh"
+    cp -f "${src_configs}/scripts/wallpaper.sh" "${wf_scripts}/wallpaper.sh"
 
     chmod +x "${wf_scripts}/screenshot.sh" "${wf_scripts}/volume.sh" \
-             "${wf_scripts}/brightness.sh" "${wf_scripts}/powermenu.sh"
+             "${wf_scripts}/brightness.sh" "${wf_scripts}/powermenu.sh" \
+             "${wf_scripts}/clipboard.sh" "${wf_scripts}/layout.sh" \
+             "${wf_scripts}/wallpaper.sh"
 
     # Apply global theming & browser download fixes
     setup_theming

@@ -40,6 +40,12 @@ configure_repositories() {
     march=$(detect_microarch)
     log_info "Detected CPU Microarchitecture Level: x86-64-${march}"
 
+    # 0. Fix IPv6 unexpected EOF connection drops (prefer IPv4 for reliable AUR & mirrors)
+    if [[ -f /etc/gai.conf ]]; then
+        log_info "Configuring /etc/gai.conf to prioritize IPv4 over broken IPv6 routes..."
+        sudo sed -i 's/^#precedence ::ffff:0:0\/96  100/precedence ::ffff:0:0\/96  100/' /etc/gai.conf 2>/dev/null || true
+    fi
+
     # 1. Synchronize package databases before any AUR operations
     log_info "Synchronizing pacman package databases..."
     sudo pacman -Sy
@@ -60,12 +66,21 @@ configure_repositories() {
             log_info "Creating default ALHP mirrorlist fallback in /etc/pacman.d/alhp-mirrorlist..."
             sudo mkdir -p /etc/pacman.d
             cat << 'MIRROREOF' | sudo tee /etc/pacman.d/alhp-mirrorlist > /dev/null
+Server = https://alhp.krautflare.de/$repo/os/$arch/
 Server = https://alhp.harting.dev/$repo/os/$arch
 Server = https://alhp2.harting.dev/$repo/os/$arch
 MIRROREOF
         elif ! grep -q "^Server" /etc/pacman.d/alhp-mirrorlist; then
             log_info "Activating default ALHP mirror in /etc/pacman.d/alhp-mirrorlist..."
             sudo sed -i '0,/^#Server/s/^#//' /etc/pacman.d/alhp-mirrorlist
+        fi
+
+        # Ensure Cloudflare mirror is prioritized and failing cdn.alhp.dev disabled
+        if [[ -f /etc/pacman.d/alhp-mirrorlist ]]; then
+            log_info "Prioritizing Cloudflare mirror and disabling failing cdn.alhp.dev in ALHP mirrorlist..."
+            sudo sed -i 's|^Server = https://cdn.alhp.dev|#Server = https://cdn.alhp.dev|' /etc/pacman.d/alhp-mirrorlist 2>/dev/null || true
+            sudo sed -i '/krautflare/d' /etc/pacman.d/alhp-mirrorlist 2>/dev/null || true
+            sudo sed -i '1i Server = https://alhp.krautflare.de/$repo/os/$arch/' /etc/pacman.d/alhp-mirrorlist 2>/dev/null || true
         fi
 
         # Install alhp-keyring (separate call for better error isolation)

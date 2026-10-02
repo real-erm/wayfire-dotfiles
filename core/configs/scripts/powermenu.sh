@@ -1,38 +1,41 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Wayfire / Waybar Power Menu Helper
-# Toggles wlogout if active, or falls back to fuzzel dmenu
+# Wayfire Clean Modern Power Menu (Rofi-Wayland & Systemd)
 # ==============================================================================
 
 set -euo pipefail
 
-# 1. If wlogout is already running, toggle it off
-if pidof wlogout &>/dev/null; then
-    pkill -x wlogout 2>/dev/null || true
-    exit 0
-fi
+uptime_info=$(uptime -p 2>/dev/null | sed -e 's/up //g' || echo "active")
 
-# 2. Try wlogout if installed
-if command -v wlogout &>/dev/null; then
-    wlogout -b 4 -c 0 -r 0 -m 0 \
-        --layout "${HOME}/.config/wlogout/layout" \
-        --css "${HOME}/.config/wlogout/style.css" &
-    exit 0
-fi
+options="󰌾  Lock\n󰍃  Logout\n󰒲  Suspend\n󰑐  Reboot\n󰐥  Shutdown"
 
-# 3. Fallback to fuzzel dmenu overlay if wlogout is unavailable
-if command -v fuzzel &>/dev/null; then
-    chosen=$(printf "  Lock\n  Logout\n  Reboot\n  Shutdown\n  Suspend" | fuzzel --dmenu -p "Power: " -l 5 -w 18 2>/dev/null || true)
-    case "$chosen" in
-        *"Lock"*)
-            hyprlock ;;
-        *"Logout"*)
-            wayfiremsg exit 2>/dev/null || killall wayfire 2>/dev/null || true ;;
-        *"Reboot"*)
-            systemctl reboot ;;
-        *"Shutdown"*)
-            systemctl poweroff ;;
-        *"Suspend"*)
-            systemctl suspend ;;
-    esac
-fi
+chosen=$(printf "$options" | rofi -dmenu \
+    -p "Power (${uptime_info})" \
+    -theme-str '
+        window { width: 360px; height: 285px; border-radius: 14px; border: 2px solid #7aa2f7; background-color: #1a1b26; }
+        mainbox { padding: 14px; background-color: #1a1b26; }
+        inputbar { children: [prompt]; background-color: #1a1b26; margin: 0px 0px 10px 0px; }
+        prompt { background-color: #7aa2f7; text-color: #1a1b26; font-weight: bold; padding: 6px 12px; border-radius: 6px; }
+        listview { columns: 1; lines: 5; spacing: 6px; background-color: #1a1b26; }
+        element { padding: 8px 14px; border-radius: 8px; background-color: #1a1b26; text-color: #c0caf5; font: "JetBrainsMono Nerd Font 11"; }
+        element selected { background-color: #24283b; text-color: #7aa2f7; font-weight: bold; }
+        element-text { background-color: inherit; text-color: inherit; }
+    ' 2>/dev/null || true)
+
+case "$chosen" in
+    *"Lock"*)
+        hyprlock
+        ;;
+    *"Logout"*)
+        wayfiremsg exit 2>/dev/null || killall wayfire 2>/dev/null || true
+        ;;
+    *"Suspend"*)
+        systemctl suspend
+        ;;
+    *"Reboot"*)
+        systemctl reboot
+        ;;
+    *"Shutdown"*)
+        systemctl poweroff
+        ;;
+esac

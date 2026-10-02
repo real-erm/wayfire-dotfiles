@@ -1,38 +1,178 @@
+/* ==============================================================================
+ * Waybar: Libadwaita & macOS Continuous Top Bar Aesthetic
+ * Full long line across top edge with clean, flat headerbar styling
+ * ============================================================================== */
+
 * {
     border: none;
     border-radius: 0;
-    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-family: "JetBrainsMono Nerd Font", "Noto Sans", sans-serif;
     font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
     min-height: 0;
 }
 
+/* Continuous edge-to-edge top bar (Libadwaita / macOS) */
 window#waybar {
-    background: rgba(26, 27, 38, 0.85);
-    color: #c0caf5;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(30, 30, 30, 0.94);
+    color: #deddda;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    transition: background-color 0.2s ease;
 }
 
+/* Left Group */
 #custom-arch {
-    color: #7aa2f7;
-    font-size: 18px;
-    padding: 0 12px;
+    color: #78aeed;
+    font-size: 15px;
+    padding: 0 10px;
+    margin: 2px 2px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
 }
 
-#clock, #pulseaudio, #backlight, #network, #bluetooth, #battery, #custom-power {
-    background: rgba(41, 46, 66, 0.7);
-    padding: 2px 12px;
-    margin: 4px 3px;
-    border-radius: 8px;
-    color: #c0caf5;
+#custom-arch:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
 }
 
+#custom-files,
+#custom-screenshot {
+    color: #deddda;
+    font-size: 13px;
+    padding: 0 8px;
+    margin: 2px 2px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+
+#custom-files:hover,
+#custom-screenshot:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
+/* Taskbar (GNOME / macOS style active app tabs) */
+#taskbar button,
+#wlr-taskbar button {
+    padding: 0 8px;
+    margin: 2px 2px;
+    border-radius: 6px;
+    background: transparent;
+    color: #c0bfbc;
+    transition: all 0.15s ease;
+    border-bottom: 2px solid transparent;
+}
+
+#taskbar button.active,
+#wlr-taskbar button.active {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    font-weight: 600;
+    border-bottom: 2px solid #3584e4;
+}
+
+#taskbar button:hover,
+#wlr-taskbar button:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
+/* Center: macOS / GNOME Centered Clock */
 #clock {
-    font-weight: bold;
-    color: #bb9af7;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 0 12px;
+    margin: 2px 0;
+    border-radius: 6px;
+    transition: background-color 0.15s ease;
 }
 
+#clock:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Right Group Items (macOS Menu Bar Items) */
+#pulseaudio,
+#backlight,
+#network,
+#bluetooth,
+#custom-language,
+#custom-clipboard,
+#battery,
+#tray {
+    padding: 0 8px;
+    margin: 2px 1px;
+    border-radius: 6px;
+    color: #deddda;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+#pulseaudio:hover,
+#backlight:hover,
+#network:hover,
+#bluetooth:hover,
+#custom-language:hover,
+#custom-clipboard:hover,
+#battery:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
+#custom-language {
+    color: #8ff0a4;
+    font-weight: 600;
+}
+
+#custom-clipboard {
+    color: #deddda;
+}
+
+#battery.warning {
+    color: #f8e45c;
+}
+
+#battery.critical {
+    color: #f66151;
+}
+
+/* Power Menu Button */
 #custom-power {
-    color: #f7768e;
-    margin-right: 6px;
+    color: #f66151;
+    font-size: 13px;
+    padding: 0 10px;
+    margin: 2px 4px 2px 2px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+
+#custom-power:hover {
+    background-color: rgba(246, 97, 81, 0.2);
+    color: #ff7b63;
+}
+
+/* System Tray */
+#tray {
+    background: transparent;
+    padding: 0 6px;
+    margin: 2px 2px;
+}
+
+#tray button {
+    padding: 0 3px;
+    margin: 0 1px;
+    border-radius: 4px;
+}
+
+#tray button:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
 }
