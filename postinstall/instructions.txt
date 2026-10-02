@@ -7,31 +7,40 @@ Below is the checklist of manual tasks and recommendations for your first login:
 
 1. Web Browser & Passwords:
    - Launch your installed browser (Super + W or fuzzel).
-   - Install the Proton Pass browser extension (or your preferred password manager).
-   - Sign in to your account and synchronize your credentials and bookmarks.
+   - If you chose LibreWolf or Brave Origin, configure your preferred extensions.
+   - Install your password manager extension (e.g., Proton Pass / Bitwarden).
+   - Sign in to synchronize credentials and bookmarks.
 
-2. Audio & Output Configuration:
+2. KDE Connect Integration:
+   - KDE Connect indicator starts automatically in the system tray.
+   - Ensure your phone and PC are on the same Wi-Fi network.
+   - Pair devices via the tray icon or in terminal:
+       $ kdeconnect-cli -l
+       $ kdeconnect-cli -d <device-id> --pair
+   - Note: If using a firewall (ufw/firewalld), open UDP/TCP ports 1714-1764.
+
+3. Audio & Output Configuration:
    - Verify active PipeWire audio sink using:
        $ pulsemixer
    - Test volume keys (Volume Up, Volume Down, Mute).
 
-3. Network & Bluetooth:
+4. Network & Bluetooth:
    - Connect to Wi-Fi via the system tray applet or terminal:
        $ nmtui
    - Pair wireless headphones or Bluetooth peripherals via:
        $ blueman-manager
 
-4. Session Keybindings Quick Reference:
+5. Session Keybindings Quick Reference:
    - Super + Enter       : Launch Foot Terminal
    - Super + D / Space   : Open Application Launcher (Fuzzel)
    - Super + E           : Open File Manager (Thunar)
    - Super + W           : Launch Web Browser
    - Super + G           : Open Text Editor (Geany)
    - Super + L           : Lock Screen (Hyprlock)
-   - Super + X           : Power / Logout Menu (Wlogout)
+   - Super + X           : Power Menu (wlogout / fuzzel overlay)
    - Print / Shift+Print : Capture Fullscreen / Selected Area Screenshot
 
-5. System Reboot:
+6. System Reboot:
    - To finish applying all kernel modules, user sessions, and services:
        $ sudo reboot
 ================================================================================

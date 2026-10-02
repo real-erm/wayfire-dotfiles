@@ -11,11 +11,10 @@ install_browser_extras() {
     local choice="1"
     if [[ -t 0 ]]; then
         printf "\n${COLOR_WHITE}Select Primary Web Browser to Install:${COLOR_RESET}\n"
-        printf "  [1] ${COLOR_GREEN}LibreWolf${COLOR_RESET} (Official Arch [extra] - Privacy Hardened, Recommended)\n"
-        printf "  [2] Firefox (Official Arch [extra])\n"
-        printf "  [3] Chromium (Official Arch [extra])\n"
-        printf "  [4] Skip browser installation\n"
-        read -rp "Enter choice [1-4] (default: 1): " user_choice
+        printf "  [1] ${COLOR_GREEN}LibreWolf${COLOR_RESET} (Official Arch extra/librewolf - Privacy Hardened, Recommended)\n"
+        printf "  [2] ${COLOR_CYAN}Brave Origin${COLOR_RESET} (AUR aur/brave-origin-bin - Minimalist, Debloated)\n"
+        printf "  [3] Skip (Proceed without installing a browser)\n"
+        read -rp "Enter choice [1-3] (default: 1): " user_choice
         choice="${user_choice:-1}"
     fi
 
@@ -28,15 +27,11 @@ install_browser_extras() {
             desktop_entry="librewolf.desktop"
             ;;
         2)
-            browser_pkg="firefox"
-            desktop_entry="firefox.desktop"
+            browser_pkg="brave-origin-bin"
+            desktop_entry="brave-browser.desktop"
             ;;
         3)
-            browser_pkg="chromium"
-            desktop_entry="chromium.desktop"
-            ;;
-        4)
-            log_info "Skipping web browser installation."
+            log_info "Skipping web browser installation as selected."
             return 0
             ;;
         *)
@@ -48,6 +43,15 @@ install_browser_extras() {
 
     log_info "Installing web browser: ${browser_pkg} via paru..."
     paru -S --needed --noconfirm "$browser_pkg"
+
+    # Detect desktop entry if brave-origin installed with an alternative filename
+    if [[ "$browser_pkg" == "brave-origin-bin" ]]; then
+        local found_dt
+        found_dt=$(ls /usr/share/applications/*brave*.desktop 2>/dev/null | head -n1 | xargs -n1 basename 2>/dev/null || true)
+        if [[ -n "$found_dt" ]]; then
+            desktop_entry="$found_dt"
+        fi
+    fi
 
     if [[ -n "$desktop_entry" ]] && command -v xdg-settings &>/dev/null; then
         log_info "Registering ${desktop_entry} as default XDG web browser..."

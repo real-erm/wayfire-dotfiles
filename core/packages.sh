@@ -11,6 +11,11 @@ build_paru_helper() {
     log_info "Synchronizing package databases via pacman -Sy..."
     sudo pacman -Sy
 
+    # Enable native Color and VerbosePkgLists in /etc/pacman.conf so pacman and paru render cleanly
+    log_info "Enabling native Color and VerbosePkgLists in /etc/pacman.conf..."
+    sudo sed -i 's/^#Color/Color/' /etc/pacman.conf
+    sudo sed -i 's/^#VerbosePkgLists/VerbosePkgLists/' /etc/pacman.conf
+
     log_info "Installing prerequisite build toolchain via pacman..."
     sudo pacman -S --needed --noconfirm base-devel git rust bat
 
@@ -38,8 +43,6 @@ build_paru_helper() {
 [options]
 BottomUp
 SudoLoop
-Color
-FileManager = bat
 EOF
     log_success "paru configuration deployed."
 }
@@ -80,6 +83,13 @@ install_system_packages() {
         bluez-utils
         blueman
         libnotify
+        kdeconnect
+        sshfs
+
+        # GTK Schemas & Integration
+        gtk3
+        gtk4
+        gsettings-desktop-schemas
 
         # Terminals & Shell
         foot
@@ -116,7 +126,6 @@ install_system_packages() {
         slurp
         wf-recorder
         pastel
-        python-pywal
         imagemagick
     )
 

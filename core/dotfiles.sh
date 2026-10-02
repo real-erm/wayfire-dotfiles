@@ -124,6 +124,12 @@ ipc = on
 preload = ${selected_wallpaper}
 wallpaper = ,${selected_wallpaper}
 EOF
+
+    # Sync wallpaper to ReGreet display manager if greetd directory is present
+    if [[ -d /etc/greetd ]]; then
+        sudo cp -f "${selected_wallpaper}" /etc/greetd/wallpaper.png 2>/dev/null || true
+        sudo chmod 644 /etc/greetd/wallpaper.png 2>/dev/null || true
+    fi
 }
 
 deploy_core_dotfiles() {
@@ -136,6 +142,7 @@ deploy_core_dotfiles() {
     mkdir -p "${config_dir}/waybar" "${config_dir}/fuzzel" "${config_dir}/mako" \
              "${config_dir}/wlogout" "${config_dir}/hypr" "${config_dir}/foot" \
              "${config_dir}/alacritty" "${config_dir}/fish" "${wf_scripts}" \
+             "${config_dir}/gtk-3.0" "${config_dir}/gtk-4.0" \
              "${HOME}/Pictures/Screenshots"
 
     log_info "Deploying Wayfire and application configurations..."
@@ -156,8 +163,31 @@ deploy_core_dotfiles() {
     cp -f "${src_configs}/scripts/screenshot.sh" "${wf_scripts}/screenshot.sh"
     cp -f "${src_configs}/scripts/volume.sh" "${wf_scripts}/volume.sh"
     cp -f "${src_configs}/scripts/brightness.sh" "${wf_scripts}/brightness.sh"
+    cp -f "${src_configs}/scripts/powermenu.sh" "${wf_scripts}/powermenu.sh"
 
-    chmod +x "${wf_scripts}/screenshot.sh" "${wf_scripts}/volume.sh" "${wf_scripts}/brightness.sh"
+    chmod +x "${wf_scripts}/screenshot.sh" "${wf_scripts}/volume.sh" \
+             "${wf_scripts}/brightness.sh" "${wf_scripts}/powermenu.sh"
+
+    log_info "Configuring GTK window controls (minimize, maximize, close)..."
+    local gtk_settings="[Settings]
+gtk-theme-name=Adwaita-dark
+gtk-icon-theme-name=Papirus-Dark
+gtk-font-name=JetBrainsMono Nerd Font 10
+gtk-cursor-theme-name=Papirus
+gtk-application-prefer-dark-theme=1
+gtk-decoration-layout=icon:minimize,maximize,close"
+
+    echo "$gtk_settings" > "${config_dir}/gtk-3.0/settings.ini"
+    echo "$gtk_settings" > "${config_dir}/gtk-4.0/settings.ini"
+
+    if command -v gsettings &>/dev/null; then
+        log_info "Applying GTK settings via gsettings..."
+        gsettings set org.gnome.desktop.wm.preferences button-layout 'icon:minimize,maximize,close' 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark' 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface font-name 'JetBrainsMono Nerd Font 10' 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null || true
+    fi
 
     # Setup wallpaper
     setup_wallpaper "${config_dir}"
@@ -166,5 +196,5 @@ deploy_core_dotfiles() {
     chmod 700 "${config_dir}"
     sudo chown -R "${USER}:${USER}" "${config_dir}" "${HOME}/Pictures"
 
-    log_success "Wayfire configuration hierarchy deployed successfully."
+    log_success "Wayfire configuration hierarchy and GTK controls deployed successfully."
 }
