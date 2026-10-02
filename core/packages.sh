@@ -60,6 +60,7 @@ install_system_packages() {
     local official_packages=(
         # Compositor & Display
         wayfire
+        wf-shell
         xorg-xwayland
         greetd
         greetd-regreet
@@ -70,19 +71,23 @@ install_system_packages() {
         hyprpaper
         hyprpolkitagent
 
-        # Portals & Streaming
+        # Portals, XDG & Streaming
         pipewire
         wireplumber
         xdg-desktop-portal
         xdg-desktop-portal-wlr
         xdg-desktop-portal-gtk
+        xdg-user-dirs
 
-        # UI & Utilities
+        # UI, Launchers & Utilities
         waybar
+        rofi-wayland
+        wofi
         fuzzel
         mako
         yad
         kanshi
+        cliphist
         networkmanager
         network-manager-applet
         bluez
@@ -92,10 +97,13 @@ install_system_packages() {
         kdeconnect
         sshfs
 
-        # GTK Schemas & Integration
+        # GTK Schemas & Qt Theming Integration
         gtk3
         gtk4
         gsettings-desktop-schemas
+        qt5ct
+        qt6ct
+        kvantum
 
         # Terminals & Shell
         foot
@@ -119,6 +127,7 @@ install_system_packages() {
         mpc
         playerctl
         pulsemixer
+        pavucontrol
         brightnessctl
         wl-clipboard
 
@@ -129,6 +138,7 @@ install_system_packages() {
         file-roller
 
         # Screen Capture & Color
+        spectacle
         grim
         slurp
         wf-recorder
@@ -157,7 +167,7 @@ install_system_packages() {
                 (
                     cd "${wl_dir}/wlogout"
                     makepkg -si --noconfirm --skippgpcheck
-                ) || log_warn "wlogout manual build failed; fuzzel power menu overlay will be used as fallback."
+                ) || log_warn "wlogout manual build failed; fuzzel/rofi power menu overlay will be used as fallback."
             fi
             rm -rf "$wl_dir" 2>/dev/null || true
         fi
@@ -165,7 +175,7 @@ install_system_packages() {
         if command -v wlogout &>/dev/null; then
             log_success "wlogout installed successfully."
         else
-            log_info "wlogout not installed; fuzzel power menu overlay is active as fallback."
+            log_info "wlogout not installed; fuzzel/rofi power menu overlay is active as fallback."
         fi
     fi
 

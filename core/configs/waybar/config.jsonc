@@ -11,7 +11,7 @@
     "custom/arch": {
         "format": "  ",
         "tooltip": false,
-        "on-click": "fuzzel"
+        "on-click": "rofi -show drun || wofi --show drun || fuzzel"
     },
     "wlr/taskbar": {
         "format": "{icon}",
@@ -33,7 +33,7 @@
         "format-icons": {
             "default": ["", "", ""]
         },
-        "on-click": "pulsemixer"
+        "on-click": "pavucontrol || pulsemixer"
     },
     "backlight": {
         "format": "{icon} {percent}%",
@@ -41,9 +41,11 @@
     },
     "network": {
         "format-wifi": " {essid}",
-        "format-ethernet": " {ifname}",
+        "format-ethernet": "󰈀 {ifname}",
+        "format-linked": "󰈀 {ifname} (No IP)",
         "format-disconnected": "⚠ Disconnected",
-        "on-click": "networkmanager_dmenu || nm-connection-editor"
+        "tooltip-format": "{ifname} via {gwaddr}",
+        "on-click": "nm-connection-editor || networkmanager_dmenu"
     },
     "bluetooth": {
         "format": " {status}",

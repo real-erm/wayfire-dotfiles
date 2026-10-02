@@ -6,8 +6,8 @@ Congratulations! Your automated Arch Linux Wayfire installation is complete.
 Below is the checklist of manual tasks and recommendations for your first login:
 
 1. Web Browser & Passwords:
-   - Launch your installed browser (Super + W or fuzzel).
-   - If you chose LibreWolf or Brave Origin, configure your preferred extensions.
+   - Launch your installed browser (Super + W or Super + Ctrl).
+   - Downloads are configured directly to ~/Downloads with XDG portal support.
    - Install your password manager extension (e.g., Proton Pass / Bitwarden).
    - Sign in to synchronize credentials and bookmarks.
 
@@ -19,26 +19,30 @@ Below is the checklist of manual tasks and recommendations for your first login:
        $ kdeconnect-cli -d <device-id> --pair
    - Note: If using a firewall (ufw/firewalld), open UDP/TCP ports 1714-1764.
 
-3. Audio & Output Configuration:
-   - Verify active PipeWire audio sink using:
-       $ pulsemixer
-   - Test volume keys (Volume Up, Volume Down, Mute).
+3. Audio & Volume Control:
+   - Volume keys control WirePlumber audio streams directly.
+   - Open full audio mixer GUI via Super + M or clicking the volume icon:
+       $ pavucontrol
 
-4. Network & Bluetooth:
-   - Connect to Wi-Fi via the system tray applet or terminal:
-       $ nmtui
-   - Pair wireless headphones or Bluetooth peripherals via:
-       $ blueman-manager
+4. Keyboard Layout & Input Controls:
+   - Toggle English (US) / Arabic (AR) keyboard layout using:
+       Super + Space
+   - Mouse acceleration is set to 1:1 flat (unaccelerated) in Wayfire.
 
 5. Session Keybindings Quick Reference:
-   - Super + Enter       : Launch Foot Terminal
-   - Super + D / Space   : Open Application Launcher (Fuzzel)
-   - Super + E           : Open File Manager (Thunar)
-   - Super + W           : Launch Web Browser
-   - Super + G           : Open Text Editor (Geany)
-   - Super + L           : Lock Screen (Hyprlock)
-   - Super + X           : Power Menu (wlogout / fuzzel overlay)
-   - Print / Shift+Print : Capture Fullscreen / Selected Area Screenshot
+   - Super + Enter             : Launch Foot Terminal
+   - Super + Ctrl              : Application Launcher (Rofi / Wofi / Fuzzel)
+   - Super + D                 : Show Desktop / Minimize All Windows
+   - Super + V                 : Clipboard History Menu (Cliphist)
+   - Super + Space             : Toggle Keyboard Layout (US / AR)
+   - Super + E                 : Open File Manager (Thunar)
+   - Super + W                 : Launch Web Browser
+   - Super + G                 : Open Text Editor (Geany)
+   - Super + M                 : Open Audio Mixer (Pavucontrol)
+   - Print                     : Launch KDE Spectacle Screenshot Tool
+   - Shift + Print / Super+Shift+S : Spectacle Region Screenshot
+   - Super + L                 : Lock Screen (Hyprlock)
+   - Super + X                 : Power Menu (wlogout / fuzzel overlay)
 
 6. System Reboot:
    - To finish applying all kernel modules, user sessions, and services:
