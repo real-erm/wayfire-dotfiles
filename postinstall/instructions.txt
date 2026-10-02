@@ -1,0 +1,37 @@
+================================================================================
+                      POST-INSTALLATION MANUAL CHECKLIST
+================================================================================
+
+Congratulations! Your automated Arch Linux Wayfire installation is complete.
+Below is the checklist of manual tasks and recommendations for your first login:
+
+1. Web Browser & Passwords:
+   - Launch your installed browser (Super + W or fuzzel).
+   - Install the Proton Pass browser extension (or your preferred password manager).
+   - Sign in to your account and synchronize your credentials and bookmarks.
+
+2. Audio & Output Configuration:
+   - Verify active PipeWire audio sink using:
+       $ pulsemixer
+   - Test volume keys (Volume Up, Volume Down, Mute).
+
+3. Network & Bluetooth:
+   - Connect to Wi-Fi via the system tray applet or terminal:
+       $ nmtui
+   - Pair wireless headphones or Bluetooth peripherals via:
+       $ blueman-manager
+
+4. Session Keybindings Quick Reference:
+   - Super + Enter       : Launch Foot Terminal
+   - Super + D / Space   : Open Application Launcher (Fuzzel)
+   - Super + E           : Open File Manager (Thunar)
+   - Super + W           : Launch Web Browser
+   - Super + G           : Open Text Editor (Geany)
+   - Super + L           : Lock Screen (Hyprlock)
+   - Super + X           : Power / Logout Menu (Wlogout)
+   - Print / Shift+Print : Capture Fullscreen / Selected Area Screenshot
+
+5. System Reboot:
+   - To finish applying all kernel modules, user sessions, and services:
+       $ sudo reboot
+================================================================================

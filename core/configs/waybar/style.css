@@ -1,0 +1,38 @@
+* {
+    border: none;
+    border-radius: 0;
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-size: 13px;
+    min-height: 0;
+}
+
+window#waybar {
+    background: rgba(26, 27, 38, 0.85);
+    color: #c0caf5;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#custom-arch {
+    color: #7aa2f7;
+    font-size: 18px;
+    padding: 0 12px;
+}
+
+#clock, #pulseaudio, #backlight, #network, #bluetooth, #battery, #custom-power {
+    background: rgba(41, 46, 66, 0.7);
+    padding: 2px 12px;
+    margin: 4px 3px;
+    border-radius: 8px;
+    color: #c0caf5;
+}
+
+#clock {
+    font-weight: bold;
+    color: #bb9af7;
+}
+
+#custom-power {
+    color: #f7768e;
+    margin-right: 6px;
+}

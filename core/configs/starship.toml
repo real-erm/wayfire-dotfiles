@@ -1,0 +1,17 @@
+format = "$os$directory$git_branch$git_status$character"
+
+[os]
+format = "[$symbol]($style) "
+style = "bold blue"
+disabled = false
+
+[os.symbols]
+Arch = " "
+
+[directory]
+style = "bold cyan"
+truncation_length = 3
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
