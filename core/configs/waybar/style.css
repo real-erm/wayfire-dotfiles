@@ -7,7 +7,7 @@
     border: none;
     border-radius: 0;
     font-family: "JetBrainsMono Nerd Font", "Noto Sans", sans-serif;
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 500;
     letter-spacing: 0.2px;
     min-height: 0;
@@ -15,7 +15,7 @@
 
 /* Continuous edge-to-edge top bar (Libadwaita / macOS) */
 window#waybar {
-    background-color: rgba(30, 30, 30, 0.94);
+    background-color: rgba(28, 28, 30, 0.95);
     color: #deddda;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     transition: background-color 0.2s ease;
@@ -24,9 +24,9 @@ window#waybar {
 /* Left Group */
 #custom-arch {
     color: #78aeed;
-    font-size: 15px;
-    padding: 0 10px;
-    margin: 2px 2px;
+    font-size: 16px;
+    padding: 0 12px;
+    margin: 3px 2px;
     border-radius: 6px;
     transition: all 0.15s ease;
 }
@@ -39,9 +39,9 @@ window#waybar {
 #custom-files,
 #custom-screenshot {
     color: #deddda;
-    font-size: 13px;
-    padding: 0 8px;
-    margin: 2px 2px;
+    font-size: 14px;
+    padding: 0 10px;
+    margin: 3px 2px;
     border-radius: 6px;
     transition: all 0.15s ease;
 }
@@ -55,8 +55,8 @@ window#waybar {
 /* Taskbar (GNOME / macOS style active app tabs) */
 #taskbar button,
 #wlr-taskbar button {
-    padding: 0 8px;
-    margin: 2px 2px;
+    padding: 0 10px;
+    margin: 3px 2px;
     border-radius: 6px;
     background: transparent;
     color: #c0bfbc;
@@ -82,9 +82,9 @@ window#waybar {
 #clock {
     color: #ffffff;
     font-weight: 600;
-    font-size: 13px;
-    padding: 0 12px;
-    margin: 2px 0;
+    font-size: 13.5px;
+    padding: 0 14px;
+    margin: 3px 0;
     border-radius: 6px;
     transition: background-color 0.15s ease;
 }
@@ -102,8 +102,8 @@ window#waybar {
 #custom-clipboard,
 #battery,
 #tray {
-    padding: 0 8px;
-    margin: 2px 1px;
+    padding: 0 9px;
+    margin: 3px 1px;
     border-radius: 6px;
     color: #deddda;
     transition: background-color 0.15s ease, color 0.15s ease;
@@ -123,8 +123,8 @@ window#waybar {
 #custom-language {
     color: #deddda;
     font-weight: 600;
-    font-size: 12px;
-    padding: 0 8px;
+    font-size: 12.5px;
+    padding: 0 10px;
     margin: 3px 2px;
     border-radius: 6px;
     background-color: rgba(255, 255, 255, 0.05);
@@ -139,6 +139,7 @@ window#waybar {
 
 #custom-clipboard {
     color: #deddda;
+    font-size: 14px;
 }
 
 #battery.warning {
@@ -152,8 +153,8 @@ window#waybar {
 /* Power Menu Button (Libadwaita / macOS Sleek Action Pill) */
 #custom-power {
     color: #deddda;
-    font-size: 13px;
-    padding: 0 9px;
+    font-size: 14px;
+    padding: 0 11px;
     margin: 3px 6px 3px 2px;
     border-radius: 6px;
     background-color: rgba(255, 255, 255, 0.06);

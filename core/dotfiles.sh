@@ -226,6 +226,20 @@ EOF
     sudo cp -f "${config_dir}/fontconfig/fonts.conf" /etc/fonts/local.conf 2>/dev/null || true
     fc-cache -f 2>/dev/null || true
 
+    # Suppress redundant/conflicting desktop entries (keep Nautilus as single file explorer)
+    local app_dir="${HOME}/.local/share/applications"
+    mkdir -p "$app_dir"
+    for dup in pcmanfm-qt pcmanfm-qt-desktop-pref thunar; do
+        cat << DUPEOF > "${app_dir}/${dup}.desktop"
+[Desktop Entry]
+Type=Application
+Name=${dup}
+NoDisplay=true
+Hidden=true
+DUPEOF
+    done
+    update-desktop-database "$app_dir" 2>/dev/null || true
+
     log_success "Global unified theming (GTK, GNOME, Qt, Kvantum, XSettings, Nautilus, Typography) applied."
 }
 
@@ -411,7 +425,7 @@ deploy_core_dotfiles() {
     local config_dir="${HOME}/.config"
     local wf_scripts="${config_dir}/wayfire/scripts"
 
-    mkdir -p "${config_dir}/waybar" "${config_dir}/fuzzel" "${config_dir}/mako" \
+    mkdir -p "${config_dir}/waybar" "${config_dir}/mako" \
              "${config_dir}/wlogout" "${config_dir}/hypr" "${config_dir}/foot" \
              "${config_dir}/alacritty" "${config_dir}/fish" "${config_dir}/rofi" \
              "${wf_scripts}" "${HOME}/Pictures/Screenshots"
@@ -420,10 +434,11 @@ deploy_core_dotfiles() {
     cp -f "${src_configs}/wayfire.ini" "${config_dir}/wayfire.ini"
     cp -f "${src_configs}/waybar/config.jsonc" "${config_dir}/waybar/config.jsonc"
     cp -f "${src_configs}/waybar/style.css" "${config_dir}/waybar/style.css"
-    cp -f "${src_configs}/fuzzel/fuzzel.ini" "${config_dir}/fuzzel/fuzzel.ini"
     cp -f "${src_configs}/mako/config" "${config_dir}/mako/config"
     cp -f "${src_configs}/wlogout/layout" "${config_dir}/wlogout/layout"
     cp -f "${src_configs}/wlogout/style.css" "${config_dir}/wlogout/style.css"
+    mkdir -p "${config_dir}/wlogout/icons"
+    cp -rf "${src_configs}/wlogout/icons/." "${config_dir}/wlogout/icons/" 2>/dev/null || true
     cp -f "${src_configs}/hypr/hyprlock.conf" "${config_dir}/hypr/hyprlock.conf"
     cp -f "${src_configs}/foot/foot.ini" "${config_dir}/foot/foot.ini"
     cp -f "${src_configs}/alacritty/alacritty.toml" "${config_dir}/alacritty/alacritty.toml"

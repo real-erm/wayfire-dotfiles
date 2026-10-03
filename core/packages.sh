@@ -60,7 +60,7 @@ audit_conflicting_packages() {
 
     # Candidate conflicting / redundant packages across core desktop categories
     local -a candidate_conflicts=(
-        # File Managers (conflicts with Nautilus / PCManFM-Qt desktop stack)
+        # File Managers (conflicts with Nautilus desktop stack)
         thunar
         thunar-volman
         thunar-archive-plugin
@@ -68,7 +68,8 @@ audit_conflicting_packages() {
         dolphin
         nemo
         caja
-        pcmanfm             # Legacy GTK version (we bundle pcmanfm-qt)
+        pcmanfm
+        pcmanfm-qt
 
         # Screen Capture (conflicts with Grim/Slurp/Swappy Wayland stack)
         spectacle
@@ -96,6 +97,7 @@ audit_conflicting_packages() {
         fuzzel
         tofi
         dmenu
+        nwg-menu
 
         # Legacy Desktop Panels (conflicts with Waybar)
         tint2
@@ -122,9 +124,7 @@ audit_conflicting_packages() {
         gvfs-smb
         file-roller
         sushi
-        pcmanfm-qt
         rofi-wayland
-        nwg-menu
         waybar
         mako
         hyprlock
@@ -254,7 +254,6 @@ install_system_packages() {
         # UI, Launchers & Utilities
         waybar
         rofi-wayland
-        nwg-menu
         mako
         yad
         kanshi
@@ -305,14 +304,13 @@ install_system_packages() {
         pavucontrol
         brightnessctl
 
-        # File Manager & Desktop Surface (GNOME Files + PCManFM-Qt for Desktop Menu)
+        # File Manager (GNOME Files / Nautilus + extensions)
         nautilus
         gvfs
         gvfs-mtp
         gvfs-smb
         file-roller
         sushi
-        pcmanfm-qt
 
         # Screen Capture & Color (Grim + Slurp + Swappy annotation)
         grim

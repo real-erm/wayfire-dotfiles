@@ -1,54 +1,109 @@
+/* ==============================================================================
+ * wlogout: macOS Sonoma / Sequoia Frosted Glass Power Menu
+ * Apple Control Center squircle tiles with circular action badges
+ * ============================================================================== */
+
 * {
-    font-family: "JetBrainsMono Nerd Font", monospace;
-    font-size: 13px;
-    font-weight: 700;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Cantarell", "Noto Sans", sans-serif;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
     box-shadow: none;
 }
 
+/* Translucent dark cinematic background overlay */
 window {
-    background-color: rgba(18, 20, 30, 0.82);
+    background-color: rgba(10, 12, 16, 0.65);
 }
 
+/* macOS Squircle Tile */
 button {
-    color: #f0f4fc;
-    background-color: rgba(36, 40, 59, 0.85);
-    border-radius: 16px;
-    border: 1.5px solid rgba(122, 162, 247, 0.35);
-    margin: 10px;
-    padding-top: 75px;
+    color: #e5e5ea;
+    background-color: rgba(30, 32, 42, 0.72);
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    margin: 4px;
+    padding-top: 76px;
     background-repeat: no-repeat;
-    background-position: center 32%;
-    background-size: 42px;
-    transition: all 0.15s ease-in-out;
+    background-position: center 18px;
+    background-size: 50px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-button:focus, button:active, button:hover {
-    background-color: rgba(59, 130, 246, 0.65);
-    border-color: #60a5fa;
+/* Default Focus & Active */
+button:focus,
+button:active {
+    background-color: rgba(48, 52, 68, 0.85);
+    border-color: rgba(255, 255, 255, 0.35);
     color: #ffffff;
-    box-shadow: 0 0 24px rgba(59, 130, 246, 0.6);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
 }
 
+/* Per-Action macOS Accent Highlights on Hover */
+#lock:hover {
+    background-color: rgba(52, 199, 89, 0.24);
+    border-color: rgba(52, 199, 89, 0.6);
+    color: #a7f3d0;
+    box-shadow: 0 16px 36px rgba(52, 199, 89, 0.25);
+}
+
+#logout:hover {
+    background-color: rgba(94, 92, 230, 0.26);
+    border-color: rgba(94, 92, 230, 0.6);
+    color: #ddd6fe;
+    box-shadow: 0 16px 36px rgba(94, 92, 230, 0.25);
+}
+
+#suspend:hover {
+    background-color: rgba(0, 122, 255, 0.26);
+    border-color: rgba(0, 122, 255, 0.6);
+    color: #bfdbfe;
+    box-shadow: 0 16px 36px rgba(0, 122, 255, 0.25);
+}
+
+#hibernate:hover {
+    background-color: rgba(175, 82, 222, 0.26);
+    border-color: rgba(175, 82, 222, 0.6);
+    color: #f3e8ff;
+    box-shadow: 0 16px 36px rgba(175, 82, 222, 0.25);
+}
+
+#reboot:hover {
+    background-color: rgba(255, 159, 10, 0.26);
+    border-color: rgba(255, 159, 10, 0.6);
+    color: #fef08a;
+    box-shadow: 0 16px 36px rgba(255, 159, 10, 0.25);
+}
+
+#shutdown:hover {
+    background-color: rgba(255, 69, 58, 0.28);
+    border-color: rgba(255, 69, 58, 0.65);
+    color: #fecaca;
+    box-shadow: 0 16px 36px rgba(255, 69, 58, 0.28);
+}
+
+/* Custom Circular Badge Icons */
 #lock {
-    background-image: image(url("/usr/share/wlogout/icons/lock.png"));
+    background-image: image(url("/home/erm/.config/wlogout/icons/lock.png"), url("icons/lock.png"));
 }
 
 #logout {
-    background-image: image(url("/usr/share/wlogout/icons/logout.png"));
+    background-image: image(url("/home/erm/.config/wlogout/icons/logout.png"), url("icons/logout.png"));
 }
 
 #suspend {
-    background-image: image(url("/usr/share/wlogout/icons/suspend.png"));
+    background-image: image(url("/home/erm/.config/wlogout/icons/suspend.png"), url("icons/suspend.png"));
 }
 
 #hibernate {
-    background-image: image(url("/usr/share/wlogout/icons/hibernate.png"));
-}
-
-#shutdown {
-    background-image: image(url("/usr/share/wlogout/icons/shutdown.png"));
+    background-image: image(url("/home/erm/.config/wlogout/icons/hibernate.png"), url("icons/hibernate.png"));
 }
 
 #reboot {
-    background-image: image(url("/usr/share/wlogout/icons/reboot.png"));
+    background-image: image(url("/home/erm/.config/wlogout/icons/reboot.png"), url("icons/reboot.png"));
+}
+
+#shutdown {
+    background-image: image(url("/home/erm/.config/wlogout/icons/shutdown.png"), url("icons/shutdown.png"));
 }

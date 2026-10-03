@@ -1,7 +1,7 @@
 {
     "layer": "top",
     "position": "top",
-    "height": 32,
+    "height": 38,
     "spacing": 4,
     "modules-left": ["custom/arch", "custom/files", "custom/screenshot", "wlr/taskbar"],
     "modules-center": ["clock"],
@@ -24,7 +24,7 @@
     },
     "wlr/taskbar": {
         "format": "{icon}",
-        "icon-size": 18,
+        "icon-size": 20,
         "tooltip-format": "{title}",
         "on-click": "activate"
     },
@@ -33,7 +33,7 @@
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
     },
     "tray": {
-        "icon-size": 16,
+        "icon-size": 18,
         "spacing": 8
     },
     "pulseaudio": {
