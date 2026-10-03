@@ -1,41 +1,30 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Wayfire Clean Modern Power Menu (Rofi-Wayland & Systemd)
+# Wayfire Clean Modern Power Menu (wlogout)
 # ==============================================================================
 
 set -euo pipefail
 
-uptime_info=$(uptime -p 2>/dev/null | sed -e 's/up //g' || echo "active")
+# If wlogout is currently open, toggle it off
+if pgrep -x wlogout &>/dev/null; then
+    killall wlogout 2>/dev/null || true
+    exit 0
+fi
 
-options="󰌾  Lock\n󰍃  Logout\n󰒲  Suspend\n󰑐  Reboot\n󰐥  Shutdown"
+# Launch wlogout if available
+if command -v wlogout &>/dev/null; then
+    exec wlogout -b 6 -c 16 -r 16 -m 320
+fi
 
-chosen=$(printf "$options" | rofi -dmenu \
-    -p "Power (${uptime_info})" \
-    -theme-str '
-        window { width: 360px; height: 285px; border-radius: 14px; border: 2px solid #7aa2f7; background-color: #1a1b26; }
-        mainbox { padding: 14px; background-color: #1a1b26; }
-        inputbar { children: [prompt]; background-color: #1a1b26; margin: 0px 0px 10px 0px; }
-        prompt { background-color: #7aa2f7; text-color: #1a1b26; font-weight: bold; padding: 6px 12px; border-radius: 6px; }
-        listview { columns: 1; lines: 5; spacing: 6px; background-color: #1a1b26; }
-        element { padding: 8px 14px; border-radius: 8px; background-color: #1a1b26; text-color: #c0caf5; font: "JetBrainsMono Nerd Font 11"; }
-        element selected { background-color: #24283b; text-color: #7aa2f7; font-weight: bold; }
-        element-text { background-color: inherit; text-color: inherit; }
-    ' 2>/dev/null || true)
-
-case "$chosen" in
-    *"Lock"*)
-        hyprlock
-        ;;
-    *"Logout"*)
-        wayfiremsg exit 2>/dev/null || killall wayfire 2>/dev/null || true
-        ;;
-    *"Suspend"*)
-        systemctl suspend
-        ;;
-    *"Reboot"*)
-        systemctl reboot
-        ;;
-    *"Shutdown"*)
-        systemctl poweroff
-        ;;
-esac
+# Clean Zenity / Yad fallback if wlogout is unavailable
+if command -v yad &>/dev/null; then
+    action=$(yad --entry --title="Power Menu" --text="Choose an action:" \
+        --entry-text="Lock" "Logout" "Suspend" "Reboot" "Shutdown" 2>/dev/null || true)
+    case "$action" in
+        "Lock") hyprlock ;;
+        "Logout") wayfiremsg exit 2>/dev/null || killall wayfire 2>/dev/null || true ;;
+        "Suspend") systemctl suspend ;;
+        "Reboot") systemctl reboot ;;
+        "Shutdown") systemctl poweroff ;;
+    esac
+fi

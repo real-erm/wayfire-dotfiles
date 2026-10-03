@@ -104,6 +104,14 @@ audit_conflicting_packages() {
 
         # Conflicting / Unreadable Fancy Calligraphy Fonts (superseded by clean Noto Sans Arabic)
         ttf-scheherazade-new
+
+        # Legacy / Conflicting Display Managers (superseded by modern SDDM)
+        greetd
+        greetd-regreet
+        lightdm
+        lightdm-gtk-greeter
+        gdm
+        lxdm
     )
 
     # Protected whitelist: apps bundled by this setup that MUST NOT be removed
@@ -133,8 +141,7 @@ audit_conflicting_packages() {
         wf-shell
         wcm
         xsettingsd
-        greetd
-        greetd-regreet
+        sddm
     )
 
     local -a detected_conflicts=()
@@ -223,8 +230,10 @@ install_system_packages() {
         wcm
         xsettingsd
         xorg-xwayland
-        greetd
-        greetd-regreet
+        sddm
+        qt6-svg
+        qt6-virtualkeyboard
+        qt6-multimedia-ffmpeg
 
         # Session Locking & Auth
         hyprlock

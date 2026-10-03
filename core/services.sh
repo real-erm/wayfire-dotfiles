@@ -60,258 +60,116 @@ EOF
 }
 
 # ------------------------------------------------------------------------------
-# Modern ReGreet Greeter Aesthetics
+# SDDM Astronaut Theme Configuration
 # ------------------------------------------------------------------------------
-setup_regreet() {
-    log_info "Configuring greetd and ReGreet GTK greeter aesthetics..."
+setup_sddm_astronaut() {
+    log_info "Configuring SDDM and Astronaut theme aesthetics..."
 
-    # Ensure greeter user exists with video and render group permissions
-    sudo useradd -M -G video,render greeter 2>/dev/null || sudo usermod -aG video,render greeter
+    local theme_name="sddm-astronaut-theme"
+    local theme_dir="/usr/share/sddm/themes/${theme_name}"
+    local theme_repo="https://github.com/Keyitdev/sddm-astronaut-theme.git"
 
-    # Minimal Wayfire session for greeter (Mouse acceleration adjustments excluded)
-    sudo mkdir -p /etc/greetd /usr/share/backgrounds
-    cat << 'EOF' | sudo tee /etc/greetd/wayfire-greeter.ini >/dev/null
-[core]
-plugins = autostart
-close_top_view = none
+    sudo mkdir -p "/usr/share/sddm/themes" "/etc/sddm.conf.d" "/usr/share/backgrounds" "/usr/share/fonts"
 
-[autostart]
-greeter = sh -c 'regreet --style /etc/greetd/regreet.css; wayfiremsg exit || killall wayfire'
-EOF
-
-    # Configure greetd default session to launch regreet under minimal wayfire
-    cat << 'EOF' | sudo tee /etc/greetd/config.toml >/dev/null
-[terminal]
-vt = 1
-
-[default_session]
-command = "wayfire --config /etc/greetd/wayfire-greeter.ini"
-user = "greeter"
-EOF
-
-    # Ensure system wallpaper is provisioned at /usr/share/backgrounds/default.jpg
-    if [[ ! -f /usr/share/backgrounds/default.jpg ]]; then
-        if [[ -f "${SCRIPT_DIR}/wallpapers/default.png" ]]; then
-            sudo cp -f "${SCRIPT_DIR}/wallpapers/default.png" /usr/share/backgrounds/default.jpg
-        elif [[ -f "${SCRIPT_DIR}/wallpaper/default.png" ]]; then
-            sudo cp -f "${SCRIPT_DIR}/wallpaper/default.png" /usr/share/backgrounds/default.jpg
-        else
-            printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\x18\x1b\x26\x00\x00\x00\x82\x00\x81\x1b\x9d\xe2\xb7\x00\x00\x00\x00IEND\xaeB`\x82' | sudo tee /usr/share/backgrounds/default.jpg >/dev/null || true
-        fi
-        sudo chmod 644 /usr/share/backgrounds/default.jpg 2>/dev/null || true
+    # Clone or update SDDM Astronaut theme
+    if [[ -d "${theme_dir}/.git" ]]; then
+        log_info "Updating existing SDDM Astronaut theme repository..."
+        sudo git -C "${theme_dir}" pull --rebase 2>/dev/null || true
+    elif [[ -d "/tmp/sddm-astronaut-theme" ]]; then
+        log_info "Deploying SDDM Astronaut theme from local cache..."
+        sudo rm -rf "${theme_dir}"
+        sudo cp -r /tmp/sddm-astronaut-theme "${theme_dir}"
+    else
+        log_info "Cloning SDDM Astronaut theme repository..."
+        sudo rm -rf "${theme_dir}"
+        sudo git clone --depth 1 "${theme_repo}" "${theme_dir}"
     fi
 
-    # Configure modern ReGreet TOML settings with custom clock and background path
-    cat << 'EOF' | sudo tee /etc/greetd/regreet.toml >/dev/null
-[background]
-path = "/usr/share/backgrounds/default.jpg"
-fit = "Cover"
+    # Install custom fonts bundled with Astronaut theme
+    if [[ -d "${theme_dir}/Fonts" ]]; then
+        log_info "Installing Astronaut theme fonts to /usr/share/fonts..."
+        sudo cp -r "${theme_dir}/Fonts"/* /usr/share/fonts/ 2>/dev/null || true
+        sudo fc-cache -f /usr/share/fonts 2>/dev/null || true
+    fi
 
-[clock]
-format = "%H:%M ~ %A, %B %d"
+    # Ensure system wallpaper is provisioned at /usr/share/backgrounds/default.jpg
+    local wp_src="/usr/share/backgrounds/default.jpg"
+    if [[ ! -f "${wp_src}" ]]; then
+        if [[ -f "${SCRIPT_DIR}/wallpapers/wallhaven-n6qdqq.jpg" ]]; then
+            sudo cp -f "${SCRIPT_DIR}/wallpapers/wallhaven-n6qdqq.jpg" "${wp_src}"
+        elif [[ -f "${SCRIPT_DIR}/wallpapers/default.png" ]]; then
+            sudo cp -f "${SCRIPT_DIR}/wallpapers/default.png" "${wp_src}"
+        elif [[ -f "${SCRIPT_DIR}/wallpaper/default.png" ]]; then
+            sudo cp -f "${SCRIPT_DIR}/wallpaper/default.png" "${wp_src}"
+        elif [[ -f "${theme_dir}/Backgrounds/astronaut.png" ]]; then
+            sudo cp -f "${theme_dir}/Backgrounds/astronaut.png" "${wp_src}"
+        fi
+        sudo chmod 644 "${wp_src}" 2>/dev/null || true
+    fi
 
-[appearance]
-greeting_message = "Welcome to Arch Linux"
+    # Auto-trim letterboxes from wallpaper using ImageMagick
+    if [[ -f "${wp_src}" && -d "${theme_dir}/Backgrounds" ]]; then
+        if command -v magick &>/dev/null; then
+            magick "${wp_src}" -fuzz 10% -trim +repage /tmp/sddm_clean_wp.jpg 2>/dev/null || cp -f "${wp_src}" /tmp/sddm_clean_wp.jpg
+        else
+            cp -f "${wp_src}" /tmp/sddm_clean_wp.jpg
+        fi
+        sudo cp -f /tmp/sddm_clean_wp.jpg "${theme_dir}/Backgrounds/default.jpg"
+        sudo cp -f /tmp/sddm_clean_wp.jpg "${theme_dir}/Backgrounds/astronaut.png" 2>/dev/null || true
+        sudo chmod 644 "${theme_dir}/Backgrounds/default.jpg" "${theme_dir}/Backgrounds/astronaut.png" 2>/dev/null || true
+        rm -f /tmp/sddm_clean_wp.jpg
+    fi
 
-[GTK]
-application_prefer_dark_theme = true
-cursor_theme_name = "Bibata-Modern-Classic"
-font_name = "Noto Sans 11"
-icon_theme_name = "Papirus-Dark"
-theme_name = "Adwaita-dark"
+    # Fix Astronaut theme configuration (eliminate blur smudges, fix button visibility & contrast)
+    if [[ -f "${theme_dir}/Themes/astronaut.conf" ]]; then
+        sudo sed -i 's|^Background=.*|Background="Backgrounds/default.jpg"|' "${theme_dir}/Themes/astronaut.conf"
+        sudo sed -i 's|^CropBackground=.*|CropBackground="true"|' "${theme_dir}/Themes/astronaut.conf"
+        sudo sed -i 's|^PartialBlur=.*|PartialBlur="false"|' "${theme_dir}/Themes/astronaut.conf"
+        sudo sed -i 's|^FullBlur=.*|FullBlur="false"|' "${theme_dir}/Themes/astronaut.conf"
+        sudo sed -i 's|^HaveFormBackground=.*|HaveFormBackground="false"|' "${theme_dir}/Themes/astronaut.conf"
+        sudo sed -i 's|^BypassSystemButtonsChecks=.*|BypassSystemButtonsChecks="true"|' "${theme_dir}/Themes/astronaut.conf"
+        sudo sed -i 's|^ScreenWidth=.*|ScreenWidth=""|' "${theme_dir}/Themes/astronaut.conf"
+        sudo sed -i 's|^ScreenHeight=.*|ScreenHeight=""|' "${theme_dir}/Themes/astronaut.conf"
+        sudo sed -i 's|^LoginButtonBackgroundColor=.*|LoginButtonBackgroundColor="#3b82f6"|' "${theme_dir}/Themes/astronaut.conf"
+        sudo sed -i 's|^LoginButtonTextColor=.*|LoginButtonTextColor="#ffffff"|' "${theme_dir}/Themes/astronaut.conf"
+        sudo sed -i 's|^SystemButtonsIconsColor=.*|SystemButtonsIconsColor="#ffffff"|' "${theme_dir}/Themes/astronaut.conf"
+    fi
 
-[commands]
-reboot = ["systemctl", "reboot"]
-poweroff = ["systemctl", "poweroff"]
+    # Fix upstream Main.qml dynamic scaling bug (prevents letterboxing / stretching on non-1080p displays)
+    if [[ -f "${theme_dir}/Main.qml" ]]; then
+        sudo sed -i 's|^[[:space:]]*height: config.ScreenHeight.*|    anchors.fill: parent|' "${theme_dir}/Main.qml"
+        sudo sed -i '/^[[:space:]]*width: config.ScreenWidth.*/d' "${theme_dir}/Main.qml"
+    fi
+
+    # Fix login button high-contrast visibility in Components/Input.qml
+    if [[ -f "${theme_dir}/Components/Input.qml" ]]; then
+        sudo sed -i 's/color: config.LoginButtonTextColor/color: "#ffffff"/' "${theme_dir}/Components/Input.qml"
+        sudo sed -i 's/opacity: 0.5/opacity: 1.0/' "${theme_dir}/Components/Input.qml"
+        sudo sed -i 's/opacity: 0.2/opacity: 0.95/' "${theme_dir}/Components/Input.qml"
+    fi
+
+    # Ensure metadata.desktop points to Themes/astronaut.conf
+    if [[ -f "${theme_dir}/metadata.desktop" ]]; then
+        sudo sed -i 's|^ConfigFile=.*|ConfigFile=Themes/astronaut.conf|' "${theme_dir}/metadata.desktop"
+    fi
+
+    # Configure SDDM master configuration
+    cat << 'EOF' | sudo tee /etc/sddm.conf >/dev/null
+[Theme]
+Current=sddm-astronaut-theme
 EOF
 
-    # Configure modern glassmorphic ReGreet GTK4 CSS styling
-    cat << 'EOF' | sudo tee /etc/greetd/regreet.css >/dev/null
-/* ReGreet High-Contrast Clean Modern Theme */
-
-window {
-    background-color: #12131a;
-    color: #ffffff;
-    font-family: "Noto Sans", "JetBrainsMono Nerd Font", sans-serif;
-}
-
-picture {
-    filter: brightness(0.85);
-}
-
-/* Central Login Card (High contrast dark slate card) */
-overlay > frame.background {
-    background-color: rgba(18, 20, 29, 0.96);
-    border: 1px solid rgba(122, 162, 247, 0.45);
-    border-radius: 18px;
-    padding: 30px 42px;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
-}
-
-/* Clock Frame (Top pill) */
-overlay > frame.background:first-child {
-    background-color: rgba(18, 20, 29, 0.96);
-    border: 1px solid rgba(122, 162, 247, 0.35);
-    border-top: none;
-    border-radius: 0 0 16px 16px;
-    padding: 6px 24px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-}
-
-/* Clock text: Bright Crisp White */
-overlay > frame.background:first-child label {
-    font-size: 22px;
-    font-weight: 800;
-    color: #ffffff !important;
-    letter-spacing: 0.5px;
-}
-
-/* High Contrast Field Labels (User:, Session:, Password:) */
-label {
-    color: #f0f4fc !important;
-    font-size: 14px;
-    font-weight: 700;
-}
-
-/* Header greeting label */
-label:first-child {
-    font-size: 18px;
-    font-weight: 800;
-    color: #7aa2f7 !important;
-    margin-bottom: 6px;
-}
-
-/* Text & Password input fields */
-entry,
-passwordentry {
-    background-color: #1a1c28;
-    color: #ffffff !important;
-    border: 1.5px solid #3b4261;
-    border-radius: 10px;
-    padding: 8px 14px;
-    font-size: 14px;
-    font-weight: 600;
-    min-height: 42px;
-    box-shadow: none;
-    transition: all 150ms ease;
-}
-
-entry:focus,
-passwordentry:focus {
-    border-color: #7aa2f7;
-    background-color: #24283b;
-    box-shadow: 0 0 0 2px rgba(122, 162, 247, 0.4);
-}
-
-/* ComboBox dropdowns */
-combobox,
-combobox button {
-    background-color: #1a1c28;
-    color: #ffffff !important;
-    border: 1.5px solid #3b4261;
-    border-radius: 10px;
-    padding: 6px 14px;
-    font-size: 14px;
-    font-weight: 600;
-    min-height: 42px;
-}
-
-combobox label,
-combobox cellview {
-    color: #ffffff !important;
-    font-weight: 600;
-}
-
-combobox button:hover {
-    border-color: #7aa2f7;
-    background-color: #24283b;
-}
-
-/* Edit toggle buttons */
-button {
-    background-color: #24283b;
-    color: #ffffff !important;
-    border: 1.5px solid #3b4261;
-    border-radius: 10px;
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: 700;
-    transition: all 150ms ease;
-}
-
-button label {
-    color: #ffffff !important;
-}
-
-button:hover {
-    background-color: #3b4261;
-    border-color: #7aa2f7;
-    color: #ffffff !important;
-}
-
-/* Primary Login Action Button: Bold Blue with Sharp White Text */
-button.suggested-action {
-    background-color: #3b82f6 !important;
-    background-image: none !important;
-    color: #ffffff !important;
-    font-weight: 800 !important;
-    font-size: 14px;
-    border: 1.5px solid #60a5fa !important;
-    border-radius: 10px;
-    padding: 8px 24px;
-    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
-}
-
-button.suggested-action label {
-    color: #ffffff !important;
-    font-weight: 800 !important;
-}
-
-button.suggested-action:hover {
-    background-color: #2563eb !important;
-    color: #ffffff !important;
-    box-shadow: 0 6px 18px rgba(59, 130, 246, 0.6);
-}
-
-/* Power & Action Buttons (Reboot / Poweroff) */
-button.destructive-action {
-    background-color: rgba(247, 118, 142, 0.18);
-    color: #f7768e !important;
-    border: 1.5px solid rgba(247, 118, 142, 0.45);
-    border-radius: 10px;
-    padding: 8px 18px;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-button.destructive-action label {
-    color: #f7768e !important;
-}
-
-button.destructive-action:hover {
-    background-color: #f7768e !important;
-    color: #12131a !important;
-}
-
-button.destructive-action:hover label {
-    color: #12131a !important;
-}
-
-/* Bottom Actions Container */
-box.vertical > frame.background {
-    border-radius: 14px;
-    padding: 4px 10px;
-    margin-bottom: 8px;
-}
+    # Configure virtual keyboard support
+    cat << 'EOF' | sudo tee /etc/sddm.conf.d/virtualkbd.conf >/dev/null
+[General]
+InputMethod=qtvirtualkeyboard
 EOF
 
-    # Ensure greeter permissions on home and runtime folders
-    sudo mkdir -p /var/lib/greetd /var/log/greetd /var/cache/regreet
-    sudo chown -R greeter:greeter /var/lib/greetd /var/log/greetd /var/cache/regreet /etc/greetd 2>/dev/null || true
-    sudo chmod 755 /var/lib/greetd 2>/dev/null || true
-    sudo chmod 644 /etc/greetd/regreet.toml /etc/greetd/regreet.css 2>/dev/null || true
+    # Disable conflicting display managers and enable SDDM
+    sudo systemctl disable greetd.service lightdm.service gdm.service lxdm.service 2>/dev/null || true
+    sudo systemctl enable sddm.service 2>/dev/null || true
 
-    log_success "ReGreet styling, clock format, and greeter session configured."
+    log_success "SDDM Astronaut theme and service successfully configured."
 }
 
 # ------------------------------------------------------------------------------
@@ -350,7 +208,7 @@ EOF
     sudo chmod 644 /etc/polkit-1/rules.d/48-allow-power-management.rules 2>/dev/null || true
 
     log_info "Enabling systemd system services..."
-    sudo systemctl enable greetd.service
+    sudo systemctl enable sddm.service
     sudo systemctl enable NetworkManager.service
     sudo systemctl enable bluetooth.service
 
@@ -364,9 +222,9 @@ EOF
 # Master Service Module Driver
 # ------------------------------------------------------------------------------
 configure_system_services() {
-    log_step "STEP 5: Services, Environment & Display Manager Configuration"
+    log_step "STEP 6: Services, Environment & Display Manager Configuration"
     setup_environment
     setup_services
-    setup_regreet
+    setup_sddm_astronaut
     log_success "System services, environment, and display manager successfully deployed."
 }

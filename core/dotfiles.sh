@@ -383,12 +383,22 @@ preload = ${selected_wallpaper}
 wallpaper = ,${selected_wallpaper}
 EOF
 
-    # 3. Sync wallpaper to ReGreet display manager and system backgrounds
-    log_info "Synchronizing wallpaper to ReGreet display manager..."
-    sudo mkdir -p /usr/share/backgrounds /etc/greetd
+    # 3. Sync wallpaper to SDDM Astronaut theme and system backgrounds
+    log_info "Synchronizing wallpaper to SDDM Astronaut theme and system backgrounds..."
+    sudo mkdir -p /usr/share/backgrounds /usr/share/sddm/themes/sddm-astronaut-theme/Backgrounds
     sudo cp -f "${selected_wallpaper}" /usr/share/backgrounds/default.jpg 2>/dev/null || true
-    sudo cp -f "${selected_wallpaper}" /etc/greetd/wallpaper.png 2>/dev/null || true
-    sudo chmod 644 /usr/share/backgrounds/default.jpg /etc/greetd/wallpaper.png 2>/dev/null || true
+
+    if command -v magick &>/dev/null; then
+        magick "${selected_wallpaper}" -fuzz 10% -trim +repage /tmp/sddm_trim_wp.jpg 2>/dev/null || cp -f "${selected_wallpaper}" /tmp/sddm_trim_wp.jpg
+    else
+        cp -f "${selected_wallpaper}" /tmp/sddm_trim_wp.jpg
+    fi
+    sudo cp -f /tmp/sddm_trim_wp.jpg /usr/share/sddm/themes/sddm-astronaut-theme/Backgrounds/default.jpg 2>/dev/null || true
+    sudo cp -f /tmp/sddm_trim_wp.jpg /usr/share/sddm/themes/sddm-astronaut-theme/Backgrounds/astronaut.png 2>/dev/null || true
+    sudo chmod 644 /usr/share/backgrounds/default.jpg \
+                   /usr/share/sddm/themes/sddm-astronaut-theme/Backgrounds/default.jpg \
+                   /usr/share/sddm/themes/sddm-astronaut-theme/Backgrounds/astronaut.png 2>/dev/null || true
+    rm -f /tmp/sddm_trim_wp.jpg
 }
 
 # ------------------------------------------------------------------------------
@@ -429,6 +439,12 @@ deploy_core_dotfiles() {
     cp -f "${src_configs}/scripts/clipboard.sh" "${wf_scripts}/clipboard.sh"
     cp -f "${src_configs}/scripts/layout.sh" "${wf_scripts}/layout.sh"
     cp -f "${src_configs}/scripts/wallpaper.sh" "${wf_scripts}/wallpaper.sh"
+
+    # Build and deploy ultra-fast Wayfire IPC keyboard helper
+    if [[ -f "${src_configs}/scripts/wf-kbd.c" ]] && command -v gcc &>/dev/null; then
+        gcc -O2 "${src_configs}/scripts/wf-kbd.c" -o "${wf_scripts}/wf-kbd" 2>/dev/null || true
+        chmod +x "${wf_scripts}/wf-kbd" 2>/dev/null || true
+    fi
 
     chmod +x "${wf_scripts}/screenshot.sh" "${wf_scripts}/volume.sh" \
              "${wf_scripts}/brightness.sh" "${wf_scripts}/powermenu.sh" \

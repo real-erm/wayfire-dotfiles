@@ -44,13 +44,34 @@ wallpaper = ,${WALLPAPER}
 EOF
 fi
 
-# 3. Synchronize to system ReGreet / greetd background
-if [[ -w /usr/share/backgrounds/default.jpg ]]; then
-    cp -f "${WALLPAPER}" /usr/share/backgrounds/default.jpg 2>/dev/null || true
-elif sudo -n true 2>/dev/null; then
-    sudo mkdir -p /usr/share/backgrounds /etc/greetd
+# 3. Synchronize to system backgrounds and SDDM Astronaut theme background
+if sudo -n true 2>/dev/null; then
+    sudo mkdir -p /usr/share/backgrounds /usr/share/sddm/themes/sddm-astronaut-theme/Backgrounds
     sudo cp -f "${WALLPAPER}" /usr/share/backgrounds/default.jpg 2>/dev/null || true
-    sudo cp -f "${WALLPAPER}" /etc/greetd/wallpaper.png 2>/dev/null || true
+
+    if command -v magick &>/dev/null; then
+        magick "${WALLPAPER}" -fuzz 10% -trim +repage /tmp/sddm_trim_wp.jpg 2>/dev/null || cp -f "${WALLPAPER}" /tmp/sddm_trim_wp.jpg
+    else
+        cp -f "${WALLPAPER}" /tmp/sddm_trim_wp.jpg
+    fi
+    sudo cp -f /tmp/sddm_trim_wp.jpg /usr/share/sddm/themes/sddm-astronaut-theme/Backgrounds/default.jpg 2>/dev/null || true
+    sudo cp -f /tmp/sddm_trim_wp.jpg /usr/share/sddm/themes/sddm-astronaut-theme/Backgrounds/astronaut.png 2>/dev/null || true
+    sudo chmod 644 /usr/share/backgrounds/default.jpg \
+                   /usr/share/sddm/themes/sddm-astronaut-theme/Backgrounds/default.jpg \
+                   /usr/share/sddm/themes/sddm-astronaut-theme/Backgrounds/astronaut.png 2>/dev/null || true
+    rm -f /tmp/sddm_trim_wp.jpg
+elif [[ -w /usr/share/backgrounds/default.jpg ]]; then
+    cp -f "${WALLPAPER}" /usr/share/backgrounds/default.jpg 2>/dev/null || true
+    if [[ -w /usr/share/sddm/themes/sddm-astronaut-theme/Backgrounds/default.jpg ]]; then
+        if command -v magick &>/dev/null; then
+            magick "${WALLPAPER}" -fuzz 10% -trim +repage /tmp/sddm_trim_wp.jpg 2>/dev/null || cp -f "${WALLPAPER}" /tmp/sddm_trim_wp.jpg
+        else
+            cp -f "${WALLPAPER}" /tmp/sddm_trim_wp.jpg
+        fi
+        cp -f /tmp/sddm_trim_wp.jpg /usr/share/sddm/themes/sddm-astronaut-theme/Backgrounds/default.jpg 2>/dev/null || true
+        cp -f /tmp/sddm_trim_wp.jpg /usr/share/sddm/themes/sddm-astronaut-theme/Backgrounds/astronaut.png 2>/dev/null || true
+        rm -f /tmp/sddm_trim_wp.jpg
+    fi
 fi
 
 echo "Wallpaper successfully synchronized: ${WALLPAPER}"

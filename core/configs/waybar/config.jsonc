@@ -65,7 +65,8 @@
     },
     "custom/language": {
         "exec": "bash -c ~/.config/wayfire/scripts/layout.sh get",
-        "interval": 2,
+        "interval": 1,
+        "signal": 8,
         "format": "󰌌  {}",
         "tooltip-format": "Keyboard Layout: {}\nClick to toggle (Win+Space / Alt+Shift)",
         "on-click": "bash -c ~/.config/wayfire/scripts/layout.sh toggle"
@@ -85,7 +86,7 @@
         "format-icons": ["󰂎", "󰁺", "󰁼", "󰁾", "󰂀", "󰁹"]
     },
     "custom/power": {
-        "format": "",
+        "format": "󰐥",
         "tooltip-format": "Power Menu (Super+X)",
         "on-click": "bash -c ~/.config/wayfire/scripts/powermenu.sh"
     }

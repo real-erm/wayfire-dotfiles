@@ -121,8 +121,20 @@ window#waybar {
 }
 
 #custom-language {
-    color: #8ff0a4;
+    color: #deddda;
     font-weight: 600;
+    font-size: 12px;
+    padding: 0 8px;
+    margin: 3px 2px;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: all 0.15s ease;
+}
+
+#custom-language:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
 }
 
 #custom-clipboard {
@@ -137,18 +149,21 @@ window#waybar {
     color: #f66151;
 }
 
-/* Power Menu Button */
+/* Power Menu Button (Libadwaita / macOS Sleek Action Pill) */
 #custom-power {
-    color: #f66151;
+    color: #deddda;
     font-size: 13px;
-    padding: 0 10px;
-    margin: 2px 4px 2px 2px;
+    padding: 0 9px;
+    margin: 3px 6px 3px 2px;
     border-radius: 6px;
-    transition: all 0.15s ease;
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #custom-power:hover {
-    background-color: rgba(246, 97, 81, 0.2);
+    background-color: rgba(246, 97, 81, 0.22);
+    border-color: rgba(246, 97, 81, 0.45);
     color: #ff7b63;
 }
 
